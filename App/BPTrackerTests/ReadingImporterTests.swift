@@ -1,0 +1,190 @@
+import BPMKit
+import CoreGraphics
+import Foundation
+import SwiftData
+import Testing
+@testable import BPTracker
+
+@MainActor
+struct ReadingImporterTests {
+    let container: ModelContainer
+    let context: ModelContext
+    let importer: ReadingImporter
+
+    init() throws {
+        container = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
+                                       configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        context = container.mainContext
+        importer = ReadingImporter(context: context)
+    }
+
+    func reading(_ minute: Int, user: Int?, device: String = "veroval-bpm25", sys: Int = 120) -> DeviceReading {
+        DeviceReading(timestamp: Date(timeIntervalSince1970: 1_800_000_000 + Double(minute) * 60),
+                      systolic: sys, diastolic: 80, pulse: 60, deviceID: device, deviceName: "Veroval BPM25", deviceUser: user)
+    }
+
+    func readings(of profile: Profile) throws -> [Reading] {
+        try context.fetch(FetchDescriptor<Reading>()).filter { $0.profile == profile }
+    }
+
+    @Test func linksDeviceUsersAndDeduplicates() throws {
+        let alex = Profile(name: "Alex"), sam = Profile(name: "Sam")
+        context.insert(alex)
+        context.insert(sam)
+        let download = [reading(0, user: 1), reading(1, user: 1), reading(2, user: 2)]
+
+        let unlinked = try importer.unlinkedUsers(in: download)
+        #expect(unlinked.map(\.deviceUser) == [1, 2])
+        try importer.linkDeviceUser(unlinked[0], to: alex)
+        try importer.linkDeviceUser(unlinked[1], to: sam)
+
+        let first = try importer.importDeviceReadings(download)
+        #expect(first.added == 3 && first.duplicates == 0)
+        #expect(try readings(of: alex).count == 2)
+        #expect(try readings(of: sam).count == 1)
+
+        // Downloading again, plus one new reading, only adds the new one.
+        let second = try importer.importDeviceReadings(download + [reading(5, user: 1)])
+        #expect(second.added == 1 && second.duplicates == 3)
+        #expect(try importer.unlinkedUsers(in: download).isEmpty)
+    }
+
+    @Test func sameMinuteDifferentUsersAreBothKept() throws {
+        let p = Profile(name: "P")
+        context.insert(p)
+        for user in [1, 2] { try importer.linkDeviceUser(DeviceUserRef(deviceID: "veroval-bpm25", deviceName: "V", deviceUser: user), to: p) }
+        let summary = try importer.importDeviceReadings([reading(0, user: 1), reading(0, user: 2)])
+        #expect(summary.added == 2)
+    }
+
+    @Test func relinkMovesOnlyReadingsStillInOldProfile() throws {
+        let a = Profile(name: "A"), b = Profile(name: "B"), c = Profile(name: "C")
+        [a, b, c].forEach(context.insert)
+        let link = try importer.linkDeviceUser(DeviceUserRef(deviceID: "veroval-bpm25", deviceName: "V", deviceUser: 2), to: a)
+        _ = try importer.importDeviceReadings([reading(0, user: 2), reading(1, user: 2)])
+        let moved = try readings(of: a).first!
+        moved.profile = c
+
+        try importer.relink(link, to: b)
+        #expect(try readings(of: a).isEmpty)
+        #expect(try readings(of: b).count == 1)
+        #expect(try readings(of: c).count == 1)
+    }
+
+    @Test func csvRoundTripIsIdempotentAndKeepsDeviceIdentity() throws {
+        let alex = Profile(name: "Alex")
+        context.insert(alex)
+        try importer.linkDeviceUser(DeviceUserRef(deviceID: "veroval-bpm25", deviceName: "V", deviceUser: 1), to: alex)
+        _ = try importer.importDeviceReadings([reading(0, user: 1)])
+        context.insert(Reading(timestamp: Date(timeIntervalSince1970: 1_800_100_000), systolic: 130, diastolic: 85, pulse: nil,
+                               sourceName: "Manual", deviceID: alex.manualDeviceID, deviceUser: nil, note: "evening, \"tired\"",
+                               profile: alex))
+        try context.save()
+
+        let csv = ReadingsCSV.encode(ReadingImporter.csvRows(for: try context.fetch(FetchDescriptor<Reading>())))
+        let again = try importer.importCSV(try ReadingsCSV.decode(csv), fallbackProfile: Profile(name: "unused"))
+        #expect(again.added == 0 && again.duplicates == 2)
+
+        // Into a fresh store: profile recreated, and a later device download is recognised.
+        let fresh = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
+                                       configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let freshImporter = ReadingImporter(context: fresh.mainContext)
+        let restored = try freshImporter.importCSV(try ReadingsCSV.decode(csv), fallbackProfile: Profile(name: "unused"))
+        #expect(restored.added == 2 && restored.createdProfiles == ["Alex"])
+        #expect(try freshImporter.unlinkedUsers(in: [reading(0, user: 1)]).isEmpty)
+        let download = try freshImporter.importDeviceReadings([reading(0, user: 1)])
+        #expect(download.added == 0 && download.duplicates == 1)
+    }
+
+    @Test func ignoredDeviceUserIsSkippedAndNotAskedAgain() throws {
+        let me = Profile(name: "Me")
+        context.insert(me)
+        let download = [reading(0, user: 1), reading(1, user: 2), reading(2, user: 2)]
+        try importer.linkDeviceUser(DeviceUserRef(deviceID: "veroval-bpm25", deviceName: "V", deviceUser: 1), to: me)
+        try importer.linkDeviceUser(DeviceUserRef(deviceID: "veroval-bpm25", deviceName: "V", deviceUser: 2), to: nil)
+
+        #expect(try importer.unlinkedUsers(in: download).isEmpty)
+        let summary = try importer.importDeviceReadings(download)
+        #expect(summary.added == 1 && summary.ignored == 2)
+        #expect(try readings(of: me).count == 1)
+    }
+
+    @Test func ignoringKeepsImportedReadingsAndRelinkResumes() throws {
+        let me = Profile(name: "Me"), partner = Profile(name: "Partner")
+        context.insert(me)
+        context.insert(partner)
+        let link = try importer.linkDeviceUser(DeviceUserRef(deviceID: "veroval-bpm25", deviceName: "V", deviceUser: 2), to: partner)
+        _ = try importer.importDeviceReadings([reading(0, user: 2)])
+
+        try importer.ignore(link)
+        #expect(try readings(of: partner).count == 1)
+        #expect(try importer.importDeviceReadings([reading(0, user: 2), reading(1, user: 2)]).ignored == 2)
+
+        try importer.relink(link, to: partner)
+        let resumed = try importer.importDeviceReadings([reading(0, user: 2), reading(1, user: 2)])
+        #expect(resumed.added == 1 && resumed.duplicates == 1)
+    }
+
+    @Test func deletedReadingsStayDeletedUntilForgotten() throws {
+        let me = Profile(name: "Me")
+        context.insert(me)
+        try importer.linkDeviceUser(DeviceUserRef(deviceID: "veroval-bpm25", deviceName: "V", deviceUser: 1), to: me)
+        let download = [reading(0, user: 1), reading(1, user: 1)]
+        _ = try importer.importDeviceReadings(download)
+        let csv = ReadingsCSV.encode(ReadingImporter.csvRows(for: try readings(of: me)))
+
+        try importer.delete(try readings(of: me).filter { $0.timestamp == download[0].timestamp })
+        #expect(try readings(of: me).count == 1)
+
+        let again = try importer.importDeviceReadings(download)
+        #expect(again.added == 0 && again.previouslyDeleted == 1 && again.duplicates == 1)
+        #expect(try importer.importCSV(try ReadingsCSV.decode(csv), fallbackProfile: me).previouslyDeleted == 1)
+
+        try importer.forgetDeletedReadings()
+        #expect(try importer.importDeviceReadings(download).added == 1)
+    }
+
+    @Test func csvRowsWithoutProfileUseFallback() throws {
+        let me = Profile(name: "Me")
+        context.insert(me)
+        let rows = try ReadingsCSV.decode("date,time,systolic,diastolic\n2026-11-01,08:00,118,76\n2026-11-01,20:00,124,79\n")
+        let summary = try importer.importCSV(rows, fallbackProfile: me)
+        #expect(summary.added == 2)
+        #expect(try readings(of: me).allSatisfy(\.isManual))
+    }
+
+    @Test func pdfReportRenders() throws {
+        let p = Profile(name: "Alex")
+        context.insert(p)
+        var rs: [Reading] = []
+        for i in 0..<60 {
+            let time = Date(timeIntervalSince1970: 1_800_000_000 + Double(i) * 43_200)
+            let sys: Int = 110 + i % 30, dia: Int = 70 + i % 15, pulse: Int = 60 + i % 10
+            rs.append(Reading(timestamp: time, systolic: sys, diastolic: dia, pulse: pulse, irregularHeartbeat: i % 17 == 0,
+                              sourceName: "Manual", deviceID: p.manualDeviceID, deviceUser: nil, profile: p))
+        }
+        rs.forEach(context.insert)
+        let data = PDFReport.render(profileName: p.name, rangeTitle: "All", readings: rs)
+        #expect(data.starts(with: Array("%PDF".utf8)))
+        let pages = CGPDFDocument(CGDataProvider(data: data as CFData)!)?.numberOfPages
+        #expect(pages == 3) // 16 + 40 + 4 rows
+        // The test host is sandboxed, so the sample goes into its container.
+        if ProcessInfo.processInfo.environment["PDF_REPORT_SAMPLE"] != nil {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("sample-report.pdf")
+            try data.write(to: url)
+            print("PDF sample: \(url.path)")
+        }
+    }
+}
+
+/// Talks to a real BPM25 from inside the sandboxed app (the test host), to
+/// check the serial entitlement. Run with TEST_RUNNER_BPM25_HARDWARE_TEST=1.
+struct BPM25HardwareTests {
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["BPM25_HARDWARE_TEST"] != nil))
+    func downloadsFromConnectedMonitor() async throws {
+        let source = try #require(BPM25Source.connected().first, "no 067b:2303 bridge visible from the sandbox")
+        let readings = try await source.fetchReadings { _ in }
+        print("BPM25 hardware test: \(readings.count) readings: " + readings.map { "user \($0.deviceUser ?? 0) \($0.systolic)/\($0.diastolic) \($0.timestamp)" }.joined(separator: "; "))
+        #expect(!readings.isEmpty)
+    }
+}

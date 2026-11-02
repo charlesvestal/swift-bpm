@@ -1,0 +1,67 @@
+name: BPTracker
+options:
+  bundleIdPrefix: com.charlesvestal
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+packages:
+  BPMKit:
+    path: .
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+targets:
+  BPTracker:
+    type: application
+    platform: macOS
+    sources: [App/BPTracker]
+    dependencies:
+      - package: BPMKit
+        product: BPMKit
+    entitlements:
+      path: App/BPTracker/BPTracker.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.device.serial: true
+        com.apple.security.device.bluetooth: true
+        com.apple.security.files.user-selected.read-write: true
+    info:
+      path: App/BPTracker/Info.plist
+      properties:
+        CFBundleDisplayName: Blood Pressure
+        LSApplicationCategoryType: public.app-category.healthcare-fitness
+        NSBluetoothAlwaysUsageDescription: Blood Pressure uses Bluetooth to download readings from your blood pressure monitor.
+    settings:
+      base:
+        PRODUCT_NAME: Blood Pressure
+        PRODUCT_BUNDLE_IDENTIFIER: com.charlesvestal.BPTracker
+        PRODUCT_MODULE_NAME: BPTracker
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        ENABLE_HARDENED_RUNTIME: YES
+  BPTrackerTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [App/BPTrackerTests]
+    dependencies:
+      - target: BPTracker
+      - package: BPMKit
+        product: BPMKit
+    settings:
+      base:
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Blood Pressure.app/Contents/MacOS/Blood Pressure"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+schemes:
+  BPTracker:
+    build:
+      targets:
+        BPTracker: all
+    test:
+      targets: [BPTrackerTests]
