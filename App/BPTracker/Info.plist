@@ -24,5 +24,7 @@
 	<string>public.app-category.healthcare-fitness</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Blood Pressure uses Bluetooth to download readings from your blood pressure monitor.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Blood Pressure adds measurement-week reminders to a "Blood Pressure" list and ticks them off when your readings arrive.</string>
 </dict>
 </plist>

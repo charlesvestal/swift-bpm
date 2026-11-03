@@ -139,14 +139,15 @@ extension SchemaV1 {
     }}
 
 enum AppMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [SchemaV1.self, SchemaV2.self] }
+    static var schemas: [any VersionedSchema.Type] { [SchemaV1.self, SchemaV2.self, SchemaV3.self] }
     static var stages: [MigrationStage] {
-        [.lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self)] // adds MeasurementWeek
+        [.lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self), // adds MeasurementWeek
+         .lightweight(fromVersion: SchemaV2.self, toVersion: SchemaV3.self)] // adds MeasurementWeek.useAppleReminders
     }
 }
 
 enum AppSchema {
-    static let current = Schema(versionedSchema: SchemaV2.self)
+    static let current = Schema(versionedSchema: SchemaV3.self)
 
     /// Opens a container with the migration plan, for the app and for tests.
     static func container(_ configurations: ModelConfiguration...) throws -> ModelContainer {

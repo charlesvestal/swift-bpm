@@ -43,6 +43,7 @@
 		E7CE2D3F8C8F9450B57A8725 /* ReadingAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = D82C46B1FE9DD6706DC82266 /* ReadingAnalysis.swift */; };
 		EBB2920EECA7982551871A21 /* SchemaV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE113E96544F21E494901783 /* SchemaV2.swift */; };
 		FA1020D10655F0746C54844F /* ReadingImporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CD21E0CF52AE27B99D4F7F7 /* ReadingImporterTests.swift */; };
+		FCC95D0E7F3229DC0B68E447 /* SchemaV3.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C319C71A75CADA0AB868A9 /* SchemaV3.swift */; };
 		FDE9A4DDEC47967C334F1DC9 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607F2946690AE2F5090B0D8F /* AppSettings.swift */; };
 /* End PBXBuildFile section */
 
@@ -83,6 +84,7 @@
 		ABCBE97B4183E5AEC8072ADE /* MeasurementWeekView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementWeekView.swift; sourceTree = "<group>"; };
 		BF10709DAAC8391C2D558304 /* AnalysisFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisFeatureTests.swift; sourceTree = "<group>"; };
 		C1AADFE1AB4FB8038BF2EB21 /* BPTracker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BPTracker.entitlements; sourceTree = "<group>"; };
+		C5C319C71A75CADA0AB868A9 /* SchemaV3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV3.swift; sourceTree = "<group>"; };
 		C70F2C801BC79169C7DF3AFA /* BPTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BPTrackerApp.swift; sourceTree = "<group>"; };
 		CD483B3BCBACEDBDE48A4DDC /* swift-bpm */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "swift-bpm"; path = .; sourceTree = SOURCE_ROOT; };
 		CE113E96544F21E494901783 /* SchemaV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV2.swift; sourceTree = "<group>"; };
@@ -231,6 +233,7 @@
 				D82C46B1FE9DD6706DC82266 /* ReadingAnalysis.swift */,
 				CE941F9032768DF7CAE855B8 /* ReadingImporter.swift */,
 				CE113E96544F21E494901783 /* SchemaV2.swift */,
+				C5C319C71A75CADA0AB868A9 /* SchemaV3.swift */,
 				2F772C0C468710F6DBBFDA23 /* StoreSnapshot.swift */,
 				CEA99FAD7E720F5C5D754E96 /* WeekReminders.swift */,
 			);
@@ -365,6 +368,7 @@
 				89BBCE1A485E12C7F136C63A /* ReadingsChart.swift in Sources */,
 				78D8CD3D1B3887124F974789 /* ReadingsTable.swift in Sources */,
 				EBB2920EECA7982551871A21 /* SchemaV2.swift in Sources */,
+				FCC95D0E7F3229DC0B68E447 /* SchemaV3.swift in Sources */,
 				D464F2245D007E394A6687FE /* SettingsView.swift in Sources */,
 				824B628B1BBBEA31D149FEEA /* StatisticsView.swift in Sources */,
 				47BA7581944891B1369D5D96 /* StoreSnapshot.swift in Sources */,

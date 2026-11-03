@@ -3,16 +3,15 @@ import Foundation
 import SwiftData
 
 /// Version 2 adds measurement weeks. The other models are unchanged from V1,
-/// so V2 reuses them; the migration only creates the new table.
+/// so V2 reuses them; the migration only creates the new table. Frozen: it
+/// describes stores written by 0.2.
 enum SchemaV2: VersionedSchema {
     static let versionIdentifier = Schema.Version(2, 0, 0)
     static var models: [any PersistentModel.Type] {
         [SchemaV1.Profile.self, SchemaV1.Reading.self, SchemaV1.DeviceLink.self, SchemaV1.DeletedReading.self,
-         MeasurementWeek.self]
+         SchemaV2.MeasurementWeek.self]
     }
 }
-
-typealias MeasurementWeek = SchemaV2.MeasurementWeek
 
 extension SchemaV2 {
     /// A home-monitoring week (see `HomeMonitoringPlan`) for one profile. The
@@ -38,10 +37,5 @@ extension SchemaV2 {
             self.eveningMinutes = eveningMinutes
             self.remindersEnabled = remindersEnabled
         }
-
-        var plan: HomeMonitoringPlan { HomeMonitoringPlan(start: start, days: days, discardFirstDay: discardFirstDay) }
-
-        func isActive(now: Date = Date()) -> Bool { plan.contains(now) }
-        func isFinished(now: Date = Date()) -> Bool { now >= plan.end() }
     }
 }

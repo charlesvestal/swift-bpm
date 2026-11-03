@@ -298,9 +298,41 @@ struct SchemaMigrationTests {
         let profile = try #require(try context.fetch(FetchDescriptor<Profile>()).first)
         #expect(profile.readings.count == 1)
         context.insert(MeasurementWeek(profileID: profile.uuid, start: Date(), morningMinutes: 420, eveningMinutes: 1260,
-                                       remindersEnabled: false))
+                                       reminderStyle: .appleReminders))
         try context.save()
-        #expect(try context.fetch(FetchDescriptor<MeasurementWeek>()).count == 1)
+        #expect(try context.fetch(FetchDescriptor<MeasurementWeek>()).first?.reminderStyle == .appleReminders)
+    }
+
+    /// A week written by 0.2 (V2, notifications on) comes through V3 still using notifications.
+    @Test func migratesVersion2WeekToVersion3() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "v2-\(UUID().uuidString).store")
+        defer { for suffix in ["", "-wal", "-shm"] { try? FileManager.default.removeItem(atPath: url.path + suffix) } }
+        let v2Schema = Schema(versionedSchema: SchemaV2.self)
+        do {
+            let v2 = try ModelContainer(for: v2Schema, configurations: ModelConfiguration(schema: v2Schema, url: url))
+            v2.mainContext.insert(SchemaV2.MeasurementWeek(profileID: UUID(), start: Date(), morningMinutes: 450,
+                                                           eveningMinutes: 1290, remindersEnabled: true))
+            v2.mainContext.insert(SchemaV2.MeasurementWeek(profileID: UUID(), start: Date(), morningMinutes: 450,
+                                                           eveningMinutes: 1290, remindersEnabled: false))
+            try v2.mainContext.save()
+        }
+        let v3 = try AppSchema.container(ModelConfiguration(schema: AppSchema.current, url: url))
+        let weeks = try v3.mainContext.fetch(FetchDescriptor<MeasurementWeek>())
+        #expect(Set(weeks.map(\.reminderStyle)) == [.notifications, .off])
+        #expect(weeks.allSatisfy { $0.morningMinutes == 450 })
+    }
+
+    @Test func reminderItemsCoverFutureSessions() {
+        let start = Calendar.current.startOfDay(for: Date())
+        let week = MeasurementWeek(profileID: UUID(), start: start, morningMinutes: 7 * 60, eveningMinutes: 21 * 60,
+                                   reminderStyle: .appleReminders)
+        let noon = Calendar.current.date(byAdding: .hour, value: 12, to: start)!
+        let items = WeekReminders.items(for: week, profileName: "Me", now: noon)
+        #expect(items.count == 13) // today's morning has passed
+        #expect(items.first?.title == "Evening blood pressure – day 1 of 7 (practice)")
+        #expect(items.last?.title == "Evening blood pressure – day 7 of 7")
+        #expect(Set(items.map(\.key)).count == 13)
+        #expect(WeekReminders.url(forKey: items[0].key).absoluteString.hasPrefix("bptracker://week.\(week.uuid.uuidString)."))
     }
 
     @Test func snapshotIsTakenOncePerVersion() throws {

@@ -256,7 +256,7 @@ struct MeasurementWeekTests {
         let me = Profile(name: "Me")
         context.insert(me)
         let start = Calendar.current.date(byAdding: .day, value: -8, to: Calendar.current.startOfDay(for: Date()))!
-        let week = MeasurementWeek(profileID: me.uuid, start: start, morningMinutes: 420, eveningMinutes: 1260, remindersEnabled: false)
+        let week = MeasurementWeek(profileID: me.uuid, start: start, morningMinutes: 420, eveningMinutes: 1260, reminderStyle: .off)
         context.insert(week)
         var readings: [Reading] = []
         for day in 0..<7 {

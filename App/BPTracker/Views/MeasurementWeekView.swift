@@ -2,95 +2,77 @@ import BPMKit
 import SwiftData
 import SwiftUI
 
-/// Home-monitoring weeks for one profile: start one, follow its progress,
-/// read the result and export it.
+/// One measurement week: its result, sessions, reminders and report.
 struct MeasurementWeekView: View {
+    let week: MeasurementWeek
     let profile: Profile
+    /// Called after the week is deleted, to move the selection away.
+    let onDelete: () -> Void
 
     @Environment(\.modelContext) private var context
-    @Query(sort: \MeasurementWeek.start, order: .reverse) private var allWeeks: [MeasurementWeek]
     @AppStorage(AppSettings.guideline) private var guideline = BPGuideline.esh2023
-    @State private var selectedID: UUID?
-    @State private var starting = false
     @State private var confirmDelete = false
     @State private var export: ExportFile?
-
-    private var weeks: [MeasurementWeek] { allWeeks.filter { $0.profileID == profile.uuid } }
-    private var selected: MeasurementWeek? { weeks.first { $0.uuid == selectedID } ?? weeks.first }
+    @State private var reminderError: String?
 
     var body: some View {
+        let result = HomeMonitoringResult(points: profile.readings.filter { !$0.hidden }.map(\.point),
+                                          plan: week.plan, guideline: guideline)
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                if let week = selected {
-                    header(week)
-                    let result = HomeMonitoringResult(points: profile.readings.filter { !$0.hidden }.map(\.point),
-                                                      plan: week.plan, guideline: guideline)
-                    WeekResultTiles(result: result, finished: week.isFinished())
-                    GroupBox("Sessions") {
-                        WeekGrid(result: result).padding(6)
-                    }
-                    protocolNote
-                } else {
-                    intro
+                header
+                if let reminderError {
+                    Label(reminderError, systemImage: "exclamationmark.triangle").font(.callout).foregroundStyle(.orange)
                 }
+                WeekResultTiles(result: result, finished: week.isFinished())
+                GroupBox("Sessions") {
+                    WeekGrid(result: result).padding(6)
+                }
+                Text("Average of days 2–\(week.days) (day 1 is practice), as recommended by the European Society of Hypertension. At least 12 readings over 3 days are needed. A home average of 135/85 or more is considered raised. This is not a diagnosis.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(20)
         }
-        .sheet(isPresented: $starting) {
-            StartWeekSheet(profile: profile) { selectedID = $0.uuid }
-        }
+        .navigationTitle("Measurement week")
         .confirmationDialog("Delete this measurement week?", isPresented: $confirmDelete) {
             Button("Delete Week", role: .destructive) {
-                if let week = selected {
-                    WeekReminders.cancel(week)
-                    context.delete(week)
-                    try? context.save()
-                    selectedID = nil
-                }
+                Self.delete(week, in: context)
+                onDelete()
             }
         } message: {
             Text("The readings stay; only the week and its reminders are removed.")
         }
         .fileExporter(isPresented: Binding(get: { export != nil }, set: { if !$0 { export = nil } }),
                       document: export, contentType: .pdf, defaultFilename: export?.filename) { _ in export = nil }
-        .onAppear { WeekReminders.withdrawCompleted(in: context) }
-        .onChange(of: profile.readings.count) { WeekReminders.withdrawCompleted(in: context) }
+        .task(id: profile.readings.count) { await WeekReminders.markCompleted(in: context) }
     }
 
-    private var intro: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Measurement week").font(.title2.bold())
-            Text("Doctors often ask for a week of home readings. For seven days, take two readings a minute apart each morning and each evening, sitting quietly for five minutes first. The first day is practice and left out; the rest are averaged.")
-                .fixedSize(horizontal: false, vertical: true)
-            Text("The app reminds you at your chosen times, tracks each session as readings arrive from your monitor or by hand, and makes a report for your clinician.")
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button("Start a Measurement Week…") { starting = true }
-                .buttonStyle(.borderedProminent)
-        }
-        .padding(16)
-        .frame(maxWidth: 620, alignment: .leading)
-        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 12))
+    static func delete(_ week: MeasurementWeek, in context: ModelContext) {
+        Task { await WeekReminders.cancel(week) }
+        context.delete(week)
+        try? context.save()
     }
 
-    private func header(_ week: MeasurementWeek) -> some View {
-        HStack {
-            Picker("Week", selection: Binding(get: { selected?.uuid }, set: { selectedID = $0 })) {
-                ForEach(weeks) { w in
-                    Text(title(w)).tag(Optional(w.uuid))
-                }
-            }
-            .labelsHidden()
-            .fixedSize()
-            if week.remindersEnabled && !week.isFinished() {
-                Label("Reminders at \(time(week.morningMinutes)) and \(time(week.eveningMinutes))", systemImage: "bell")
-                    .font(.caption).foregroundStyle(.secondary)
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Measurement week").font(.largeTitle.bold())
+                Text("\(profile.name) · \(dates) · \(status)").foregroundStyle(.secondary)
             }
             Spacer()
-            Button("New Week…") { starting = true }
+            if !week.isFinished() {
+                Picker(selection: Binding(get: { week.reminderStyle }, set: { changeReminders(to: $0) })) {
+                    ForEach(ReminderStyle.allCases) { Text($0.title).tag($0) }
+                } label: {
+                    Image(systemName: week.reminderStyle == .appleReminders ? "checklist" : week.reminderStyle == .off ? "bell.slash" : "bell")
+                }
+                .fixedSize()
+                .help("Reminders at \(time(week.morningMinutes)) and \(time(week.eveningMinutes))")
+            }
             Button("PDF Report…") {
-                let data = PDFReport.renderWeek(profileName: profile.name, week: week, readings: profile.readings,
-                                                guideline: guideline)
+                let data = PDFReport.renderWeek(profileName: profile.name, week: week, readings: profile.readings, guideline: guideline)
                 export = ExportFile(data: data, contentType: .pdf,
                                     filename: "Blood Pressure Week – \(profile.name) – \(week.start.formatted(.iso8601.year().month().day())).pdf")
             }
@@ -98,15 +80,27 @@ struct MeasurementWeekView: View {
         }
     }
 
-    private var protocolNote: some View {
-        Text("Average of days 2–\(selected?.days ?? 7) (day 1 is practice), as recommended by the European Society of Hypertension. At least 12 readings over 3 days are needed. A home average of 135/85 or more is considered raised. This is not a diagnosis.")
-            .font(.caption).foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+    private var dates: String {
+        "\(week.start.formatted(.dateTime.month().day())) – \(week.plan.end().addingTimeInterval(-1).formatted(.dateTime.month().day().year()))"
     }
 
-    private func title(_ week: MeasurementWeek) -> String {
-        let range = "\(week.start.formatted(.dateTime.month().day())) – \(week.plan.end().addingTimeInterval(-1).formatted(.dateTime.month().day().year()))"
-        return week.isActive() ? "\(range) (in progress)" : week.isFinished() ? range : "\(range) (upcoming)"
+    private var status: String { week.isActive() ? "in progress" : week.isFinished() ? "finished" : "upcoming" }
+
+    /// Moves the week's remaining reminders to another style.
+    private func changeReminders(to style: ReminderStyle) {
+        guard style != week.reminderStyle else { return }
+        week.reminderStyle = style
+        try? context.save()
+        let name = profile.name
+        Task {
+            do {
+                try await WeekReminders.schedule(week, profileName: name)
+                await WeekReminders.markCompleted(in: context)
+                reminderError = nil
+            } catch {
+                reminderError = error.localizedDescription
+            }
+        }
     }
 
     private func time(_ minutes: Int) -> String {
@@ -232,8 +226,8 @@ struct WeekGrid: View {
     }
 }
 
-/// Picks the start day, session times and reminders.
-private struct StartWeekSheet: View {
+/// Explains the protocol and picks the start day, session times and reminders.
+struct StartWeekSheet: View {
     let profile: Profile
     let onStart: (MeasurementWeek) -> Void
 
@@ -242,26 +236,48 @@ private struct StartWeekSheet: View {
     @State private var start = Date()
     @State private var morning = Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date())!
     @State private var evening = Calendar.current.date(bySettingHour: 21, minute: 0, second: 0, of: Date())!
-    @State private var reminders = true
+    @State private var reminderStyle = ReminderStyle.appleReminders
+    @State private var error: String?
+    @State private var working = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("New measurement week for \(profile.name)").font(.title2.bold())
+                Text("For seven days, take two readings a minute apart each morning and each evening. The first day is practice and left out; the rest are averaged into your home blood pressure, the figure doctors ask for.")
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding([.horizontal, .top], 20)
             Form {
                 Section {
                     DatePicker("First day", selection: $start, displayedComponents: .date)
                     DatePicker("Morning readings", selection: $morning, displayedComponents: .hourAndMinute)
                     DatePicker("Evening readings", selection: $evening, displayedComponents: .hourAndMinute)
-                    Toggle("Remind me", isOn: $reminders)
+                    Picker("Reminders", selection: $reminderStyle) {
+                        ForEach(ReminderStyle.allCases) { Text($0.title).tag($0) }
+                    }
+                    if reminderStyle == .appleReminders {
+                        Text("Added to a “\(WeekReminders.listName)” list, so they show on your iPhone and Watch too. Each is ticked off when that session's readings arrive.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 } footer: {
                     Text("Morning: before breakfast and before any blood-pressure medication. Evening: before dinner or bed. Sit quietly for five minutes, arm supported at heart level, then take two readings a minute apart.")
                         .foregroundStyle(.secondary)
                 }
             }
             .formStyle(.grouped)
+            if let error {
+                Text(error).font(.callout).foregroundStyle(.red).padding(.horizontal, 20)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             HStack {
+                if working { ProgressView().controlSize(.small) }
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Start Week") { startWeek() }.keyboardShortcut(.defaultAction)
+                Button(error == nil ? "Start Week" : "Done") { error == nil ? startWeek() : dismiss() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(working)
             }
             .padding(20)
         }
@@ -273,14 +289,23 @@ private struct StartWeekSheet: View {
         return (c.hour ?? 0) * 60 + (c.minute ?? 0)
     }
 
+    /// Creates the week, then its reminders; stays open to explain if reminders can't be set up.
     private func startWeek() {
         let week = MeasurementWeek(profileID: profile.uuid, start: start, morningMinutes: minutes(morning),
-                                   eveningMinutes: minutes(evening), remindersEnabled: reminders)
+                                   eveningMinutes: minutes(evening), reminderStyle: reminderStyle)
         context.insert(week)
         try? context.save()
-        let name = profile.name
-        Task { await WeekReminders.schedule(week, profileName: name) }
         onStart(week)
-        dismiss()
+        let name = profile.name
+        working = true
+        Task {
+            do {
+                try await WeekReminders.schedule(week, profileName: name)
+                dismiss()
+            } catch {
+                self.error = "The week has started, but its reminders couldn't be set up. \(error.localizedDescription)"
+            }
+            working = false
+        }
     }
 }

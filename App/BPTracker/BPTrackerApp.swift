@@ -25,7 +25,7 @@ struct BPTrackerApp: App {
         let importer = BPM25AutoImporter(context: context) { summary in
             guard summary.added > 0 else { return }
             _ = try? backups.backUpNow()
-            WeekReminders.withdrawCompleted(in: context)
+            Task { await WeekReminders.markCompleted(in: context) }
         }
         // Tests use their own in-memory stores and must not touch the device or backups.
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {

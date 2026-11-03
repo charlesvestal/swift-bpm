@@ -33,6 +33,8 @@ targets:
         com.apple.security.device.bluetooth: true
         com.apple.security.files.user-selected.read-write: true
         com.apple.security.files.bookmarks.app-scope: true
+        # Apple Reminders for measurement weeks (EventKit uses the calendars entitlement).
+        com.apple.security.personal-information.calendars: true
         # The Apple Health hand-off folder that the bundled shortcut reads
         # (iCloud Drive › Shortcuts › Blood Pressure), so no folder picker is needed.
         com.apple.security.temporary-exception.files.home-relative-path.read-write:
@@ -45,6 +47,7 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.healthcare-fitness
         NSBluetoothAlwaysUsageDescription: Blood Pressure uses Bluetooth to download readings from your blood pressure monitor.
+        NSRemindersFullAccessUsageDescription: Blood Pressure adds measurement-week reminders to a "Blood Pressure" list and ticks them off when your readings arrive.
     settings:
       base:
         PRODUCT_NAME: Blood Pressure

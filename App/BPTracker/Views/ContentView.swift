@@ -21,6 +21,12 @@ enum EditorRequest: Identifiable {
     }
 }
 
+/// What the sidebar has selected: a profile, or one of its measurement weeks.
+enum SidebarItem: Hashable {
+    case profile(UUID)
+    case week(UUID)
+}
+
 /// A picked vendor CSV waiting for its column mapping.
 struct ForeignImportRequest: Identifiable {
     let id = UUID()
@@ -39,7 +45,9 @@ struct ContentView: View {
     @Environment(\.undoManager) private var undoManager
     @Query(sort: \Profile.createdAt) private var profiles: [Profile]
 
-    @State private var selection: Profile?
+    @Query(sort: \MeasurementWeek.start, order: .reverse) private var weeks: [MeasurementWeek]
+    @State private var sidebarSelection: SidebarItem?
+    @State private var newWeekFor: Profile?
     @State private var period = Period()
     @State private var editor: EditorRequest?
     @State private var deviceImport: DeviceSourceKind?
@@ -52,9 +60,11 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            ProfileSidebar(selection: $selection)
+            ProfileSidebar(selection: $sidebarSelection, newWeekFor: $newWeekFor)
         } detail: {
-            if let selection {
+            if let week = selectedWeek, let profile = selection {
+                MeasurementWeekView(week: week, profile: profile) { sidebarSelection = .profile(profile.uuid) }
+            } else if let selection {
                 ProfileDetailView(profile: selection, period: $period, editor: $editor)
             } else if profiles.isEmpty {
                 ContentUnavailableView {
@@ -62,7 +72,7 @@ struct ContentView: View {
                 } description: {
                     Text("Create a profile, or import readings from a monitor and a profile will be set up for each of its users.")
                 } actions: {
-                    Button("Create Profile") { selection = createProfile(named: "Me") }
+                    Button("Create Profile") { select(createProfile(named: "Me")) }
                 }
             } else {
                 ContentUnavailableView("Select a profile", systemImage: "person.2")
@@ -72,11 +82,17 @@ struct ContentView: View {
         .onAppear {
             // Edit › Undo then covers deletes, edits and moves.
             context.undoManager = undoManager
-            if selection == nil { selection = profiles.first }
+            if selection == nil { select(profiles.first) }
         }
         .onChange(of: profiles) { _, new in
-            if let current = selection, !new.contains(current) { selection = new.first }
-            if selection == nil { selection = new.first }
+            if let current = selection, !new.contains(current) { select(new.first) }
+            if selection == nil { select(new.first) }
+        }
+        .onChange(of: weeks) {
+            if case .week = sidebarSelection, selectedWeek == nil { select(selection ?? profiles.first) }
+        }
+        .sheet(item: $newWeekFor) { profile in
+            StartWeekSheet(profile: profile) { sidebarSelection = .week($0.uuid) }
         }
         .sheet(item: $editor) { request in
             ReadingEditor(request: request)
@@ -108,14 +124,18 @@ struct ContentView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
-            Button {
-                if let selection { editor = .new(selection) }
+            Menu {
+                Button("Reading…") { if let selection { editor = .new(selection) } }
+                    .keyboardShortcut("n")
+                Button("Measurement Week…") { newWeekFor = selection }
+                    .keyboardShortcut("n", modifiers: [.command, .shift])
             } label: {
-                Label("Add Reading", systemImage: "plus")
+                Label("Add", systemImage: "plus")
+            } primaryAction: {
+                if let selection { editor = .new(selection) }
             }
-            .keyboardShortcut("n")
             .disabled(selection == nil)
-            .help("Enter a reading by hand")
+            .help("Add a reading, or start a measurement week")
 
             Menu {
                 Button("Veroval BPM25 (USB)") { deviceImport = .bpm25 }
@@ -150,6 +170,24 @@ struct ContentView: View {
             }
             .help("Export a PDF report or CSV file")
         }
+    }
+
+    /// The selected profile, or the profile of the selected week.
+    private var selection: Profile? {
+        switch sidebarSelection {
+        case let .profile(id): profiles.first { $0.uuid == id }
+        case .week: selectedWeek.flatMap { week in profiles.first { $0.uuid == week.profileID } }
+        case nil: nil
+        }
+    }
+
+    private var selectedWeek: MeasurementWeek? {
+        guard case let .week(id) = sidebarSelection else { return nil }
+        return weeks.first { $0.uuid == id }
+    }
+
+    private func select(_ profile: Profile?) {
+        sidebarSelection = profile.map { .profile($0.uuid) }
     }
 
     @discardableResult

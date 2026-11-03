@@ -1,8 +1,8 @@
 import Foundation
 import OSLog
 
-/// Copies the data store aside before the app opens it, once per app version,
-/// so a failed migration in a new version cannot lose data. Keeps the newest few.
+/// Copies the data store aside before the app opens it, once per app version
+/// and data-model version, so a failed migration cannot lose data. Keeps the newest few.
 enum StoreSnapshot {
     static let keep = 3
 
@@ -11,7 +11,8 @@ enum StoreSnapshot {
 
     static var appVersion: String {
         let info = Bundle.main.infoDictionary
-        return "\(info?["CFBundleShortVersionString"] as? String ?? "0")-\(info?["CFBundleVersion"] as? String ?? "0")"
+        let app = "\(info?["CFBundleShortVersionString"] as? String ?? "0")-\(info?["CFBundleVersion"] as? String ?? "0")"
+        return "\(app) schema \(AppSchema.current.version)"
     }
 
     static func takeIfNeeded(store: URL = storeURL, folder: URL = folder, version: String = appVersion) {
