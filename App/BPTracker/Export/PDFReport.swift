@@ -18,13 +18,43 @@ enum PDFReport {
             rest = rest.dropFirst(rowsPerPage)
         }
         let pageCount = 1 + chunks.count
+        var pages: [AnyView] = [AnyView(ReportPage(number: 1, count: pageCount, guideline: options.guideline) {
+            SummaryPage(profileName: profileName, periodTitle: period.title, analysis: analysis, generated: generated)
+        })]
+        for (index, chunk) in chunks.enumerated() {
+            pages.append(AnyView(ReportPage(number: index + 2, count: pageCount, guideline: options.guideline) {
+                RowsTable(rows: chunk, thresholds: options.thresholds)
+            }))
+        }
+        return pdf(pages)
+    }
 
+    /// A measurement-week report: result and sessions first, then the week's readings.
+    static func renderWeek(profileName: String, week: MeasurementWeek, readings: [Reading],
+                           guideline: BPGuideline = AppSettings.options.guideline, generated: Date = Date()) -> Data {
+        let visible = readings.filter { !$0.hidden }
+        let result = HomeMonitoringResult(points: visible.map(\.point), plan: week.plan, guideline: guideline)
+        let rows = visible.filter { week.plan.contains($0.timestamp) }.sorted { $0.timestamp < $1.timestamp }
+            .map { Row($0, guideline: guideline) }
+        let chunks = stride(from: 0, to: rows.count, by: rowsPerPage).map { Array(rows[$0..<min($0 + rowsPerPage, rows.count)]) }
+        let pageCount = 1 + chunks.count
+        var pages: [AnyView] = [AnyView(ReportPage(number: 1, count: pageCount, guideline: guideline) {
+            WeekSummaryPage(profileName: profileName, result: result, generated: generated)
+        })]
+        for (index, chunk) in chunks.enumerated() {
+            pages.append(AnyView(ReportPage(number: index + 2, count: pageCount, guideline: guideline) {
+                RowsTable(rows: chunk, thresholds: HomeMonitoringPlan.homeThresholds)
+            }))
+        }
+        return pdf(pages)
+    }
+
+    private static func pdf(_ pages: [AnyView]) -> Data {
         let data = NSMutableData()
         var mediaBox = CGRect(origin: .zero, size: pageSize)
         guard let consumer = CGDataConsumer(data: data as CFMutableData),
               let pdf = CGContext(consumer: consumer, mediaBox: &mediaBox, nil) else { return Data() }
-
-        func draw(_ page: some View) {
+        for page in pages {
             let renderer = ImageRenderer(content: page
                 .frame(width: pageSize.width, height: pageSize.height)
                 .environment(\.colorScheme, .light))
@@ -35,17 +65,71 @@ enum PDFReport {
                 pdf.endPDFPage()
             }
         }
-
-        draw(ReportPage(number: 1, count: pageCount, guideline: options.guideline) {
-            SummaryPage(profileName: profileName, periodTitle: period.title, analysis: analysis, generated: generated)
-        })
-        for (index, chunk) in chunks.enumerated() {
-            draw(ReportPage(number: index + 2, count: pageCount, guideline: options.guideline) {
-                RowsTable(rows: chunk, thresholds: options.thresholds)
-            })
-        }
         pdf.closePDF()
         return data as Data
+    }
+
+    private struct WeekSummaryPage: View {
+        let profileName: String
+        let result: HomeMonitoringResult
+        let generated: Date
+
+        var body: some View {
+            let plan = result.plan
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Home blood pressure: measurement week").font(.system(size: 18, weight: .bold))
+                    Spacer()
+                    Text("Generated \(generated.formatted(date: .long, time: .shortened))")
+                        .font(.system(size: 8)).foregroundStyle(.secondary)
+                }
+                Text(profileName).font(.system(size: 14, weight: .semibold))
+                Text("\(plan.firstDay().formatted(date: .long, time: .omitted)) – \(plan.end().addingTimeInterval(-1).formatted(date: .long, time: .omitted)) · two readings each morning and evening\(plan.discardFirstDay ? " · day 1 excluded (practice)" : "")")
+                    .font(.system(size: 9)).foregroundStyle(.secondary)
+
+                Grid(alignment: .leading, horizontalSpacing: 22, verticalSpacing: 4) {
+                    GridRow {
+                        Text("")
+                        Text("Mean").bold()
+                        Text("Readings").bold()
+                        Text("Lowest – highest").bold()
+                    }
+                    row("Home average", result.summary, bold: true)
+                    row("Morning", result.morning)
+                    row("Evening", result.evening)
+                }
+                .font(.system(size: 10))
+
+                Text(assessment).font(.system(size: 10, weight: .semibold))
+                Text("Sessions with two readings: \(result.completedSessions) of \(result.expectedSessions). Readings counted: \(result.included.count) (at least \(HomeMonitoringPlan.minimumReadings) over \(HomeMonitoringPlan.minimumDays) days recommended).")
+                    .font(.system(size: 9))
+
+                WeekGrid(result: result, compact: true, now: generated)
+                if !result.included.isEmpty {
+                    ReadingsChart(points: result.included, thresholds: HomeMonitoringPlan.homeThresholds, showPulse: true, interactive: false)
+                        .frame(height: 200)
+                }
+                Text("Protocol and thresholds follow the European Society of Hypertension's home monitoring recommendations: average of all readings after the first day, with a home average of 135/85 mmHg or more considered raised. Red values on the following pages are at or above 135/85.")
+                    .font(.system(size: 8)).foregroundStyle(.secondary)
+            }
+        }
+
+        private var assessment: String {
+            guard let raised = result.isRaised else { return "No readings in this week." }
+            let verdict = raised ? "At or above the home threshold of 135/85 mmHg." : "Below the home threshold of 135/85 mmHg."
+            return result.meetsMinimum ? verdict : "Too few readings for a reliable average. " + verdict
+        }
+
+        private func row(_ label: String, _ s: BPSummary, bold: Bool = false) -> some View {
+            GridRow {
+                Text(label).fontWeight(bold ? .semibold : .regular)
+                Text(s.systolic.map { "\(Int($0.mean.rounded()))/\(Int(s.diastolic!.mean.rounded()))" } ?? "–")
+                    .monospacedDigit().fontWeight(bold ? .semibold : .regular)
+                Text("\(s.count)").monospacedDigit()
+                Text(s.systolic.map { "\(Int($0.min))/\(Int(s.diastolic!.min)) – \(Int($0.max))/\(Int(s.diastolic!.max))" } ?? "–")
+                    .monospacedDigit()
+            }
+        }
     }
 
     struct Row: Identifiable {

@@ -10,6 +10,7 @@
 		050874D48B237900ABC5639C /* ForeignImportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE42EED89E76DBCA9C7E9FA /* ForeignImportSheet.swift */; };
 		12B58D567C1CA19916E27BA5 /* BPM25AutoImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BAB1E355D06AAC48E61D43B /* BPM25AutoImporter.swift */; };
 		23B3B98688D6806CAE65132E /* ProfileDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6F29DB80B55514462FA097 /* ProfileDetailView.swift */; };
+		2ADBE3FB9003CFC01574740E /* MeasurementWeekView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCBE97B4183E5AEC8072ADE /* MeasurementWeekView.swift */; };
 		2E7B811EB3C3563D58463959 /* AutoImportStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93B84A06E1C2BCC20F2337A4 /* AutoImportStatusView.swift */; };
 		319E2A0F926AE39169F28620 /* Blood Pressure to Health.shortcut in Resources */ = {isa = PBXBuildFile; fileRef = 63909FAAFE2B6F88299ADC3D /* Blood Pressure to Health.shortcut */; };
 		331D76EA90F1CD332B356606 /* Style.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F682EE7F4B7A2DB86FED1F1 /* Style.swift */; };
@@ -35,10 +36,12 @@
 		97F88A7DFDC7D1F27ED5467C /* BPTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70F2C801BC79169C7DF3AFA /* BPTrackerApp.swift */; };
 		B2AA0AC33DC10B8BCA6306E6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8608A54A158476B2545193B /* ContentView.swift */; };
 		C0A624CCD2E6480F009DBA9D /* DevicesSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A611AF8B29584EAD0E6E39 /* DevicesSettingsView.swift */; };
+		C8EBBF8171466AD8A1F3713D /* WeekReminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA99FAD7E720F5C5D754E96 /* WeekReminders.swift */; };
 		D24B70B15F9B60B54EDDBECD /* HealthExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B8D8E387A46361DE8546C /* HealthExporter.swift */; };
 		D464F2245D007E394A6687FE /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1376D0FC7B6720A9A49CE290 /* SettingsView.swift */; };
 		E0D80677C701B17BE81AF205 /* BookmarkedFolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACA46CDDFE9817AD75B2947 /* BookmarkedFolder.swift */; };
 		E7CE2D3F8C8F9450B57A8725 /* ReadingAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = D82C46B1FE9DD6706DC82266 /* ReadingAnalysis.swift */; };
+		EBB2920EECA7982551871A21 /* SchemaV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE113E96544F21E494901783 /* SchemaV2.swift */; };
 		FA1020D10655F0746C54844F /* ReadingImporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CD21E0CF52AE27B99D4F7F7 /* ReadingImporterTests.swift */; };
 		FDE9A4DDEC47967C334F1DC9 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607F2946690AE2F5090B0D8F /* AppSettings.swift */; };
 /* End PBXBuildFile section */
@@ -77,11 +80,14 @@
 		930D400E962DD68C032434C0 /* ReadingEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingEditor.swift; sourceTree = "<group>"; };
 		93B84A06E1C2BCC20F2337A4 /* AutoImportStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoImportStatusView.swift; sourceTree = "<group>"; };
 		9CF3F08AE04118FC05F3B5D8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		ABCBE97B4183E5AEC8072ADE /* MeasurementWeekView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementWeekView.swift; sourceTree = "<group>"; };
 		BF10709DAAC8391C2D558304 /* AnalysisFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisFeatureTests.swift; sourceTree = "<group>"; };
 		C1AADFE1AB4FB8038BF2EB21 /* BPTracker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BPTracker.entitlements; sourceTree = "<group>"; };
 		C70F2C801BC79169C7DF3AFA /* BPTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BPTrackerApp.swift; sourceTree = "<group>"; };
 		CD483B3BCBACEDBDE48A4DDC /* swift-bpm */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "swift-bpm"; path = .; sourceTree = SOURCE_ROOT; };
+		CE113E96544F21E494901783 /* SchemaV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV2.swift; sourceTree = "<group>"; };
 		CE941F9032768DF7CAE855B8 /* ReadingImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingImporter.swift; sourceTree = "<group>"; };
+		CEA99FAD7E720F5C5D754E96 /* WeekReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekReminders.swift; sourceTree = "<group>"; };
 		CF2166F8F70FDB4C8C69D9B1 /* BPTrackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BPTrackerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D04E4B1A8A27413D597C1863 /* ProfileSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSidebar.swift; sourceTree = "<group>"; };
 		D5936C346A2D13444A362111 /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
@@ -139,6 +145,7 @@
 				2C8BA23D23B0B8511EAD4A73 /* DeviceImportSheet.swift */,
 				10A611AF8B29584EAD0E6E39 /* DevicesSettingsView.swift */,
 				4FE42EED89E76DBCA9C7E9FA /* ForeignImportSheet.swift */,
+				ABCBE97B4183E5AEC8072ADE /* MeasurementWeekView.swift */,
 				70B0083E992DF78DE5FBFEC5 /* MenuBarStatus.swift */,
 				1A6F29DB80B55514462FA097 /* ProfileDetailView.swift */,
 				D04E4B1A8A27413D597C1863 /* ProfileSidebar.swift */,
@@ -223,7 +230,9 @@
 				6D225D507E53371455D1F6C4 /* Period.swift */,
 				D82C46B1FE9DD6706DC82266 /* ReadingAnalysis.swift */,
 				CE941F9032768DF7CAE855B8 /* ReadingImporter.swift */,
+				CE113E96544F21E494901783 /* SchemaV2.swift */,
 				2F772C0C468710F6DBBFDA23 /* StoreSnapshot.swift */,
+				CEA99FAD7E720F5C5D754E96 /* WeekReminders.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -343,6 +352,7 @@
 				4B42E8F2254305E0DC40BDDB /* ExportFile.swift in Sources */,
 				050874D48B237900ABC5639C /* ForeignImportSheet.swift in Sources */,
 				D24B70B15F9B60B54EDDBECD /* HealthExporter.swift in Sources */,
+				2ADBE3FB9003CFC01574740E /* MeasurementWeekView.swift in Sources */,
 				921F4613DDC9D3FD05E6147A /* MenuBarStatus.swift in Sources */,
 				83248A8A98367D23371D8B66 /* Models.swift in Sources */,
 				3DBFFA23D9485FD33E0EF405 /* PDFReport.swift in Sources */,
@@ -354,10 +364,12 @@
 				79C7AD23D5CD8FAD6A94544D /* ReadingImporter.swift in Sources */,
 				89BBCE1A485E12C7F136C63A /* ReadingsChart.swift in Sources */,
 				78D8CD3D1B3887124F974789 /* ReadingsTable.swift in Sources */,
+				EBB2920EECA7982551871A21 /* SchemaV2.swift in Sources */,
 				D464F2245D007E394A6687FE /* SettingsView.swift in Sources */,
 				824B628B1BBBEA31D149FEEA /* StatisticsView.swift in Sources */,
 				47BA7581944891B1369D5D96 /* StoreSnapshot.swift in Sources */,
 				331D76EA90F1CD332B356606 /* Style.swift in Sources */,
+				C8EBBF8171466AD8A1F3713D /* WeekReminders.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -435,7 +447,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = J4722B5MJW;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -449,7 +461,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1;
+				MARKETING_VERSION = 0.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -517,7 +529,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = J4722B5MJW;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -537,7 +549,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1;
+				MARKETING_VERSION = 0.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

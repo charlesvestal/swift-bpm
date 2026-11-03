@@ -21,8 +21,11 @@ struct BPTrackerApp: App {
         }
         let backups = BackupManager(context: container.mainContext)
         let health = HealthExporter(context: container.mainContext)
-        let importer = BPM25AutoImporter(context: container.mainContext) { summary in
-            if summary.added > 0 { _ = try? backups.backUpNow() }
+        let context = container.mainContext
+        let importer = BPM25AutoImporter(context: context) { summary in
+            guard summary.added > 0 else { return }
+            _ = try? backups.backUpNow()
+            WeekReminders.withdrawCompleted(in: context)
         }
         // Tests use their own in-memory stores and must not touch the device or backups.
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {

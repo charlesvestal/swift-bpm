@@ -280,6 +280,29 @@ struct SchemaMigrationTests {
         #expect(try versioned.mainContext.fetch(FetchDescriptor<DeletedReading>()).count == 1)
     }
 
+    /// A store written by version 1 (as shipped in 0.1) opens as version 2 with its data.
+    @Test func migratesVersion1StoreToVersion2() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "v1-\(UUID().uuidString).store")
+        defer { for suffix in ["", "-wal", "-shm"] { try? FileManager.default.removeItem(atPath: url.path + suffix) } }
+        do {
+            let v1 = try ModelContainer(for: Schema(versionedSchema: SchemaV1.self),
+                                        configurations: ModelConfiguration(schema: Schema(versionedSchema: SchemaV1.self), url: url))
+            let p = Profile(name: "Me")
+            v1.mainContext.insert(p)
+            v1.mainContext.insert(Reading(timestamp: Date(timeIntervalSince1970: 1_800_000_000), systolic: 128, diastolic: 84,
+                                          pulse: 71, sourceName: "Manual", deviceID: p.manualDeviceID, deviceUser: nil, profile: p))
+            try v1.mainContext.save()
+        }
+        let v2 = try AppSchema.container(ModelConfiguration(schema: AppSchema.current, url: url))
+        let context = v2.mainContext
+        let profile = try #require(try context.fetch(FetchDescriptor<Profile>()).first)
+        #expect(profile.readings.count == 1)
+        context.insert(MeasurementWeek(profileID: profile.uuid, start: Date(), morningMinutes: 420, eveningMinutes: 1260,
+                                       remindersEnabled: false))
+        try context.save()
+        #expect(try context.fetch(FetchDescriptor<MeasurementWeek>()).count == 1)
+    }
+
     @Test func snapshotIsTakenOncePerVersion() throws {
         let dir = FileManager.default.temporaryDirectory.appending(path: "snap-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: dir) }

@@ -232,6 +232,10 @@ struct ReadingImporter {
             _ = reading.key // load it before deleting
             context.delete(reading)
         }
+        let id = profile.uuid
+        for week in try context.fetch(FetchDescriptor<MeasurementWeek>(predicate: #Predicate { $0.profileID == id })) {
+            context.delete(week)
+        }
         context.delete(profile)
         try context.save()
     }

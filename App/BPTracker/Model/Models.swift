@@ -4,11 +4,13 @@ import SwiftData
 
 // The app's data model, versioned so future changes migrate explicitly.
 //
-// To change the model: copy `SchemaV1` to `SchemaV2` in a new file with the
-// changes, point the typealiases below at `SchemaV2`, append `SchemaV2` to
-// `AppMigrationPlan.schemas`, and add a `MigrationStage` from V1 to V2
-// (`.lightweight` for added properties with defaults, `.custom` otherwise).
-// Keep `SchemaV1` unchanged: it describes stores already on disk.
+// To change the model: add a `SchemaVn` (see SchemaV2.swift). An unchanged
+// model can be reused from the previous version; a changed one gets a copy in
+// the new namespace and its typealias moves there. Append the version to
+// `AppMigrationPlan.schemas` with a `MigrationStage` (`.lightweight` for added
+// models or properties with defaults, `.custom` otherwise), and point
+// `AppSchema.current` at it. Never edit a shipped version: it describes stores
+// already on disk.
 
 typealias Profile = SchemaV1.Profile
 typealias Reading = SchemaV1.Reading
@@ -137,12 +139,14 @@ extension SchemaV1 {
     }}
 
 enum AppMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [SchemaV1.self] }
-    static var stages: [MigrationStage] { [] }
+    static var schemas: [any VersionedSchema.Type] { [SchemaV1.self, SchemaV2.self] }
+    static var stages: [MigrationStage] {
+        [.lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self)] // adds MeasurementWeek
+    }
 }
 
 enum AppSchema {
-    static let current = Schema(versionedSchema: SchemaV1.self)
+    static let current = Schema(versionedSchema: SchemaV2.self)
 
     /// Opens a container with the migration plan, for the app and for tests.
     static func container(_ configurations: ModelConfiguration...) throws -> ModelContainer {

@@ -70,6 +70,10 @@ struct ProfileSidebar: View {
                             presenting: deleting) { profile in
             Button("Delete Profile and \(profile.readings.count) Readings", role: .destructive) {
                 if selection == profile { selection = nil }
+                let id = profile.uuid
+                for week in (try? context.fetch(FetchDescriptor<MeasurementWeek>(predicate: #Predicate { $0.profileID == id }))) ?? [] {
+                    WeekReminders.cancel(week)
+                }
                 try? ReadingImporter(context: context).deleteProfile(profile)
             }
         } message: { _ in

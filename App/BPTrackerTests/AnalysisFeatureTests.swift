@@ -247,3 +247,45 @@ struct DemoDataTests {
         #expect(try context.fetch(FetchDescriptor<Reading>()).isEmpty)
     }
 }
+
+@MainActor
+struct MeasurementWeekTests {
+    @Test func weekReportAndCleanup() throws {
+        let container = try AppSchema.inMemoryContainer()
+        let context = container.mainContext
+        let me = Profile(name: "Me")
+        context.insert(me)
+        let start = Calendar.current.date(byAdding: .day, value: -8, to: Calendar.current.startOfDay(for: Date()))!
+        let week = MeasurementWeek(profileID: me.uuid, start: start, morningMinutes: 420, eveningMinutes: 1260, remindersEnabled: false)
+        context.insert(week)
+        var readings: [Reading] = []
+        for day in 0..<7 {
+            for (hour, sys, dia) in [(7, 131, 84), (21, 124, 79)] {
+                for minute in 0..<2 {
+                    let t = Calendar.current.date(byAdding: .minute, value: hour * 60 + minute,
+                                                  to: Calendar.current.date(byAdding: .day, value: day, to: start)!)!
+                    let r = Reading(timestamp: t, systolic: sys + minute, diastolic: dia, pulse: 64, sourceName: "Manual",
+                                    deviceID: me.manualDeviceID, deviceUser: nil, profile: me)
+                    context.insert(r)
+                    readings.append(r)
+                }
+            }
+        }
+        try context.save()
+        #expect(week.isFinished() && !week.isActive())
+
+        let result = HomeMonitoringResult(points: me.readings.map(\.point), plan: week.plan)
+        #expect(result.included.count == 24 && result.meetsMinimum)
+
+        let data = PDFReport.renderWeek(profileName: "Me", week: week, readings: me.readings, guideline: .esh2023)
+        #expect(CGPDFDocument(CGDataProvider(data: data as CFData)!)?.numberOfPages == 2) // summary + 28 readings
+        if ProcessInfo.processInfo.environment["RENDER_SAMPLES"] != nil {
+            let url = FileManager.default.temporaryDirectory.appending(path: "week-report.pdf")
+            try data.write(to: url)
+            print("WEEK SAMPLE: \(url.path)")
+        }
+
+        try ReadingImporter(context: context).deleteProfile(me)
+        #expect(try context.fetch(FetchDescriptor<MeasurementWeek>()).isEmpty)
+    }
+}

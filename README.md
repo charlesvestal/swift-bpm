@@ -42,6 +42,9 @@ TEST_RUNNER_BPM25_HARDWARE_TEST=1 xcodebuild -scheme BPTracker -destination 'pla
   as Veroval) or ACC/AHA 2017, chosen in Settings › Analysis.
 - Statistics: average or median by time of day, category distribution, and
   daily/weekly/monthly ranges. Back-to-back readings can be averaged.
+- Measurement week: the ESH home-monitoring protocol (7 days, two readings
+  each morning and evening, day 1 excluded) with reminders, per-session
+  progress, the home average against 135/85, and a PDF report.
 - Periods: rolling (7/30/90 days, 1 year, all) or calendar week/month/year
   with paging.
 - CSV import/export, import from other apps' exports (presets for Beurer,

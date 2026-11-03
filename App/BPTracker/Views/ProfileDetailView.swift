@@ -10,6 +10,7 @@ struct ProfileDetailView: View {
     private enum Tab: String, CaseIterable, Identifiable {
         case overview = "Overview"
         case statistics = "Statistics"
+        case week = "Measurement Week"
         var id: String { rawValue }
     }
 
@@ -41,9 +42,11 @@ struct ProfileDetailView: View {
                 .labelsHidden()
                 .fixedSize()
             }
-            PeriodBar(period: $period)
+            if tab != .week { PeriodBar(period: $period) }
 
-            if profile.readings.isEmpty {
+            if tab == .week {
+                MeasurementWeekView(profile: profile)
+            } else if profile.readings.isEmpty {
                 ContentUnavailableView {
                     Label("No readings", systemImage: "heart.text.square")
                 } description: {
@@ -81,6 +84,8 @@ struct ProfileDetailView: View {
                         .frame(minHeight: 200)
                 case .statistics:
                     StatisticsView(analysis: analysis, useMedian: $useMedian)
+                case .week:
+                    EmptyView()
                 }
             }
         }
