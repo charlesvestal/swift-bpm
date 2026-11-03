@@ -69,20 +69,21 @@ struct TimeOfDayTable: View {
     let analysis: ReadingAnalysis
     let useMedian: Bool
     var fontSize: CGFloat? = nil
+    var text = ReportText.english
 
     var body: some View {
-        let rows: [(String, String, BPSummary)] = [("All", "", analysis.summary)]
-            + analysis.byTimeOfDay.map { ($0.0.title, $0.0.hours, $0.1) }
+        let rows: [(String, String, BPSummary)] = [(text("All", "Alle"), "", analysis.summary)]
+            + analysis.byTimeOfDay.map { (text.timeOfDay($0.0), $0.0.hours, $0.1) }
         Grid(alignment: .trailing, horizontalSpacing: 18, verticalSpacing: 6) {
             GridRow {
                 Text("").gridColumnAlignment(.leading)
                 Text("n")
-                Text("Systolic")
-                Text("Diastolic")
-                Text("Pulse")
-                Text("MAP")
-                Text("PP")
-                Text("Above \(analysis.options.thresholds.systolic)/\(analysis.options.thresholds.diastolic)")
+                Text(text("Systolic", "Systolisch"))
+                Text(text("Diastolic", "Diastolisch"))
+                Text(text("Pulse", "Puls"))
+                Text(text("MAP", "MAD"))
+                Text(text("PP", "PD"))
+                Text(text("Above", "Über") + " \(analysis.options.thresholds.systolic)/\(analysis.options.thresholds.diastolic)")
             }
             .font(font.weight(.semibold))
             Divider()
@@ -98,7 +99,7 @@ struct TimeOfDayTable: View {
                     value(s.pulse)
                     value(s.meanArterialPressure)
                     value(s.pulsePressure)
-                    Text(s.count == 0 ? "–" : "\(Int((Double(s.aboveThresholdCount) / Double(s.count) * 100).rounded()))%")
+                    Text(s.count == 0 ? "–" : text.percent(Double(s.aboveThresholdCount) / Double(s.count)))
                 }
                 .font(font)
                 .monospacedDigit()
@@ -123,6 +124,7 @@ struct TimeOfDayTable: View {
 struct CategoryDistribution: View {
     let summary: BPSummary
     var compact = false
+    var text = ReportText.english
 
     var body: some View {
         let shares = summary.categoryShares
@@ -143,7 +145,7 @@ struct CategoryDistribution: View {
                 ForEach(shares, id: \.category) { share in
                     HStack(spacing: 4) {
                         Circle().fill(share.category.color).frame(width: 7, height: 7)
-                        Text("\(share.category.title) \(Int((share.fraction * 100).rounded()))% (\(share.count))")
+                        Text("\(text.category(share.category)) \(text.percent(share.fraction)) (\(share.count))")
                     }
                 }
             }

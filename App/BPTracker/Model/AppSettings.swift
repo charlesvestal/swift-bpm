@@ -12,6 +12,8 @@ enum AppSettings {
     /// A `BPGuideline` raw value.
     static let guideline = "guideline"
     static let showMenuBarExtra = "showMenuBarExtra"
+    /// A `ReportLanguage` raw value.
+    static let reportLanguage = "reportLanguage"
     static let backupsEnabled = "backupsEnabled"
     static let backupsToKeep = "backupsToKeep"
     static let backupFolderBookmark = "backupFolderBookmark"
@@ -30,6 +32,7 @@ enum AppSettings {
             useMedian: false,
             guideline: BPGuideline.esh2023.rawValue,
             showMenuBarExtra: true,
+            reportLanguage: ReportLanguage.system.rawValue,
             backupsEnabled: true,
             backupsToKeep: 10,
             healthEnabled: false,

@@ -24,6 +24,7 @@ struct SettingsView: View {
 
 private struct GeneralSettingsView: View {
     @AppStorage(AppSettings.showMenuBarExtra) private var showMenuBarExtra = true
+    @AppStorage(AppSettings.reportLanguage) private var reportLanguage = ReportLanguage.system
     @State private var loginStatus = SMAppService.mainApp.status
     @State private var error: String?
 
@@ -43,6 +44,19 @@ private struct GeneralSettingsView: View {
                 if let error { Text(error).font(.caption).foregroundStyle(.red) }
             } footer: {
                 Text("Auto-import, Apple Health and backups only run while the app is open. With it opening at login and in the menu bar, they keep working after you close the window.")
+                    .foregroundStyle(.secondary)
+            }
+            Section {
+                Picker("Report language", selection: $reportLanguage) {
+                    ForEach(ReportLanguage.allCases) { language in
+                        Text(language == .system ? "Same as system (\(language.text.isGerman ? "Deutsch" : "English"))" : language.title)
+                            .tag(language)
+                    }
+                }
+            } header: {
+                Text("Exports")
+            } footer: {
+                Text("The language of PDF reports, including measurement-week reports: headings, categories, dates and notes. CSV files keep English column names so they can be imported again.")
                     .foregroundStyle(.secondary)
             }
         }

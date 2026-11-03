@@ -9,10 +9,11 @@ struct ReadingsChart: View {
     var thresholds = BPThresholds()
     var showPulse = true
     var interactive = true
+    /// Legend wording; reports pass their language.
+    var text = ReportText.english
 
     @State private var hovered: Date?
 
-    private static let series: KeyValuePairs<String, Color> = ["Systolic": .red, "Diastolic": .blue, "Pulse": .gray]
 
     private var hoveredPoint: BPPoint? {
         guard let hovered else { return nil }
@@ -32,6 +33,7 @@ struct ReadingsChart: View {
     }
 
     var body: some View {
+        let names = text.seriesNames
         Chart {
             RuleMark(y: .value("Systolic threshold", thresholds.systolic))
                 .foregroundStyle(.red.opacity(0.35))
@@ -41,19 +43,19 @@ struct ReadingsChart: View {
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
 
             ForEach(Array(points.enumerated()), id: \.offset) { _, p in
-                LineMark(x: .value("Time", p.timestamp), y: .value("mmHg", p.systolic), series: .value("Series", "Systolic"))
-                    .foregroundStyle(by: .value("Series", "Systolic"))
+                LineMark(x: .value("Time", p.timestamp), y: .value("mmHg", p.systolic), series: .value("Series", names.systolic))
+                    .foregroundStyle(by: .value("Series", names.systolic))
                 PointMark(x: .value("Time", p.timestamp), y: .value("mmHg", p.systolic))
-                    .foregroundStyle(by: .value("Series", "Systolic"))
+                    .foregroundStyle(by: .value("Series", names.systolic))
                     .symbolSize(p.irregularHeartbeat ? 80 : 25)
-                LineMark(x: .value("Time", p.timestamp), y: .value("mmHg", p.diastolic), series: .value("Series", "Diastolic"))
-                    .foregroundStyle(by: .value("Series", "Diastolic"))
+                LineMark(x: .value("Time", p.timestamp), y: .value("mmHg", p.diastolic), series: .value("Series", names.diastolic))
+                    .foregroundStyle(by: .value("Series", names.diastolic))
                 PointMark(x: .value("Time", p.timestamp), y: .value("mmHg", p.diastolic))
-                    .foregroundStyle(by: .value("Series", "Diastolic"))
+                    .foregroundStyle(by: .value("Series", names.diastolic))
                     .symbolSize(25)
                 if showPulse, let pulse = p.pulse {
-                    LineMark(x: .value("Time", p.timestamp), y: .value("mmHg", pulse), series: .value("Series", "Pulse"))
-                        .foregroundStyle(by: .value("Series", "Pulse"))
+                    LineMark(x: .value("Time", p.timestamp), y: .value("mmHg", pulse), series: .value("Series", names.pulse))
+                        .foregroundStyle(by: .value("Series", names.pulse))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
                 }
             }
@@ -68,7 +70,7 @@ struct ReadingsChart: View {
                     }
             }
         }
-        .chartForegroundStyleScale(Self.series)
+        .chartForegroundStyleScale([names.systolic: Color.red, names.diastolic: Color.blue, names.pulse: Color.gray])
         .chartYScale(domain: yDomain)
         .chartYAxisLabel("mmHg")
         .chartXSelection(value: interactive ? $hovered : .constant(nil))

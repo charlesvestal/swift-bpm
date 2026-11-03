@@ -11,6 +11,7 @@
 		12B58D567C1CA19916E27BA5 /* BPM25AutoImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BAB1E355D06AAC48E61D43B /* BPM25AutoImporter.swift */; };
 		23B3B98688D6806CAE65132E /* ProfileDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6F29DB80B55514462FA097 /* ProfileDetailView.swift */; };
 		2ADBE3FB9003CFC01574740E /* MeasurementWeekView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCBE97B4183E5AEC8072ADE /* MeasurementWeekView.swift */; };
+		2CE1CDA116C3A0742771932D /* ReportText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B89DACB2BF97181B5152A92 /* ReportText.swift */; };
 		2E7B811EB3C3563D58463959 /* AutoImportStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93B84A06E1C2BCC20F2337A4 /* AutoImportStatusView.swift */; };
 		319E2A0F926AE39169F28620 /* Blood Pressure to Health.shortcut in Resources */ = {isa = PBXBuildFile; fileRef = 63909FAAFE2B6F88299ADC3D /* Blood Pressure to Health.shortcut */; };
 		331D76EA90F1CD332B356606 /* Style.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F682EE7F4B7A2DB86FED1F1 /* Style.swift */; };
@@ -72,6 +73,7 @@
 		4860BFAE3C3F62A89B4A661A /* ExportFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportFile.swift; sourceTree = "<group>"; };
 		4FE42EED89E76DBCA9C7E9FA /* ForeignImportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForeignImportSheet.swift; sourceTree = "<group>"; };
 		58DCC4A19B028241FC47B8A4 /* BackupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupManager.swift; sourceTree = "<group>"; };
+		5B89DACB2BF97181B5152A92 /* ReportText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportText.swift; sourceTree = "<group>"; };
 		607F2946690AE2F5090B0D8F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		63909FAAFE2B6F88299ADC3D /* Blood Pressure to Health.shortcut */ = {isa = PBXFileReference; path = "Blood Pressure to Health.shortcut"; sourceTree = "<group>"; };
 		6D225D507E53371455D1F6C4 /* Period.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Period.swift; sourceTree = "<group>"; };
@@ -135,6 +137,7 @@
 			children = (
 				4860BFAE3C3F62A89B4A661A /* ExportFile.swift */,
 				8D6E35F9CEFDA128ACBF78A6 /* PDFReport.swift */,
+				5B89DACB2BF97181B5152A92 /* ReportText.swift */,
 			);
 			path = Export;
 			sourceTree = "<group>";
@@ -367,6 +370,7 @@
 				79C7AD23D5CD8FAD6A94544D /* ReadingImporter.swift in Sources */,
 				89BBCE1A485E12C7F136C63A /* ReadingsChart.swift in Sources */,
 				78D8CD3D1B3887124F974789 /* ReadingsTable.swift in Sources */,
+				2CE1CDA116C3A0742771932D /* ReportText.swift in Sources */,
 				EBB2920EECA7982551871A21 /* SchemaV2.swift in Sources */,
 				FCC95D0E7F3229DC0B68E447 /* SchemaV3.swift in Sources */,
 				D464F2245D007E394A6687FE /* SettingsView.swift in Sources */,

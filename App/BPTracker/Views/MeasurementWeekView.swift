@@ -168,6 +168,7 @@ struct WeekGrid: View {
     let result: HomeMonitoringResult
     var compact = false
     var now = Date()
+    var text = ReportText.english
 
     var body: some View {
         Grid(alignment: .center, horizontalSpacing: compact ? 6 : 10, verticalSpacing: compact ? 4 : 8) {
@@ -175,16 +176,16 @@ struct WeekGrid: View {
                 Text("")
                 ForEach(result.days, id: \.index) { day in
                     VStack(spacing: 0) {
-                        Text("Day \(day.index + 1)").fontWeight(.semibold)
-                        Text(day.date.formatted(.dateTime.weekday(.abbreviated).day())).foregroundStyle(.secondary)
-                        if day.excluded { Text("practice").foregroundStyle(.secondary).italic() }
+                        Text(text("Day \(day.index + 1)", "Tag \(day.index + 1)")).fontWeight(.semibold)
+                        Text(text.weekdayAndDay(day.date)).foregroundStyle(.secondary)
+                        if day.excluded { Text(text("practice", "Eingewöhnung")).foregroundStyle(.secondary).italic() }
                     }
                     .font(compact ? .system(size: 8) : .caption)
                 }
             }
             ForEach(HomeSession.allCases, id: \.self) { session in
                 GridRow {
-                    Text(session.title).font(compact ? .system(size: 8, weight: .semibold) : .callout.weight(.semibold))
+                    Text(text.session(session)).font(compact ? .system(size: 8, weight: .semibold) : .callout.weight(.semibold))
                         .gridColumnAlignment(.leading)
                     ForEach(result.days, id: \.index) { day in
                         cell(day, session)
@@ -206,7 +207,7 @@ struct WeekGrid: View {
                 Text(avg).monospacedDigit()
                 Text("\(readings.count)×").foregroundStyle(.secondary)
             } else {
-                Text(past ? "missed" : "–").foregroundStyle(.secondary)
+                Text(past ? text("missed", "verpasst") : "–").foregroundStyle(.secondary)
             }
         }
         .font(compact ? .system(size: 8) : .caption)

@@ -1,5 +1,6 @@
 import AppKit
 import BPMKit
+import PDFKit
 import Foundation
 import SwiftData
 import SwiftUI
@@ -287,5 +288,68 @@ struct MeasurementWeekTests {
 
         try ReadingImporter(context: context).deleteProfile(me)
         #expect(try context.fetch(FetchDescriptor<MeasurementWeek>()).isEmpty)
+    }
+}
+
+@MainActor
+struct ReportLanguageTests {
+    func text(of pdf: Data) -> String {
+        PDFDocument(data: pdf)?.string ?? ""
+    }
+
+    @Test func reportsInGermanAndEnglish() throws {
+        let container = try AppSchema.inMemoryContainer()
+        let context = container.mainContext
+        let me = Profile(name: "Me")
+        context.insert(me)
+        let start = Calendar.current.date(byAdding: .day, value: -8, to: Calendar.current.startOfDay(for: Date()))!
+        let week = MeasurementWeek(profileID: me.uuid, start: start, morningMinutes: 420, eveningMinutes: 1260, reminderStyle: .off)
+        context.insert(week)
+        for day in 0..<7 {
+            for (hour, sys, dia) in [(7, 146, 92), (21, 128, 82)] {
+                for minute in 0..<2 {
+                    let t = Calendar.current.date(byAdding: .minute, value: hour * 60 + minute,
+                                                  to: Calendar.current.date(byAdding: .day, value: day, to: start)!)!
+                    context.insert(Reading(timestamp: t, systolic: sys, diastolic: dia, pulse: 64, irregularHeartbeat: day == 3,
+                                           sourceName: "Manual", deviceID: me.manualDeviceID, deviceUser: nil, profile: me))
+                }
+            }
+        }
+        try context.save()
+        let german = ReportLanguage.german.text
+        let period = Period(kind: .all)
+
+        let report = text(of: PDFReport.render(profileName: "Me", period: period, readings: me.readings,
+                                               options: AnalysisOptions(), text: german))
+        for phrase in ["Blutdruckbericht", "Alle Messungen", "Systolisch (mmHg)", "Nach Tageszeit", "Morgens", "Abends",
+                       "Hypertonie Grad 1", "Seite 1 von 2", "Kategorien nach der Leitlinie ESH 2023", "Arrhythmie"] {
+            #expect(report.contains(phrase), "missing \(phrase)")
+        }
+        for english in ["Blood pressure report", "Page 1 of", "By time of day", "Grade 1 hypertension"] {
+            #expect(!report.contains(english), "English left in: \(english)")
+        }
+
+        let weekReport = text(of: PDFReport.renderWeek(profileName: "Me", week: week, readings: me.readings,
+                                                       guideline: .esh2023, text: german))
+        for phrase in ["Blutdruck-Selbstmessung: Messwoche", "Mittelwert Selbstmessung", "Eingewöhnung", "Tag 7",
+                       "Bei oder über dem Grenzwert der Selbstmessung von 135/85 mmHg."] {
+            #expect(weekReport.contains(phrase), "missing \(phrase)")
+        }
+        // German month names in dates.
+        let month = start.formatted(Date.FormatStyle(locale: Locale(identifier: "de_DE")).month(.wide))
+        #expect(weekReport.contains(month))
+
+        let englishReport = text(of: PDFReport.render(profileName: "Me", period: period, readings: me.readings,
+                                                      options: AnalysisOptions(), text: .english))
+        #expect(englishReport.contains("Blood pressure report") && englishReport.contains("Grade 1 hypertension"))
+
+        if ProcessInfo.processInfo.environment["RENDER_SAMPLES"] != nil {
+            let dir = FileManager.default.temporaryDirectory
+            try PDFReport.render(profileName: "Me", period: period, readings: me.readings, options: AnalysisOptions(), text: german)
+                .write(to: dir.appending(path: "bericht.pdf"))
+            try PDFReport.renderWeek(profileName: "Me", week: week, readings: me.readings, guideline: .esh2023, text: german)
+                .write(to: dir.appending(path: "messwoche.pdf"))
+            print("GERMAN SAMPLES: \(dir.path)")
+        }
     }
 }

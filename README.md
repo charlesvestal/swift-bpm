@@ -45,6 +45,7 @@ TEST_RUNNER_BPM25_HARDWARE_TEST=1 xcodebuild -scheme BPTracker -destination 'pla
 - Measurement week: the ESH home-monitoring protocol (7 days, two readings
   each morning and evening, day 1 excluded) with reminders, per-session
   progress, the home average against 135/85, and a PDF report.
+- Reports in English or German (Settings › General › Report language).
 - Periods: rolling (7/30/90 days, 1 year, all) or calendar week/month/year
   with paging.
 - CSV import/export, import from other apps' exports (presets for Beurer,
