@@ -23,6 +23,14 @@ fi
 codesign -dv "$APP" 2>&1 | grep -E 'Authority=Developer ID Application|Timestamp=' >/dev/null \
   || { echo "release: not signed with Developer ID and a secure timestamp" >&2; exit 1; }
 
+# Universal binary with the expected minimum macOS (see ambiotica-plugin's PLUGIN-RELEASE-PITFALLS #1-2).
+BIN="$APP/Contents/MacOS/Blood Pressure"
+[ "$(lipo -archs "$BIN")" = "x86_64 arm64" ] || { echo "release: expected x86_64 arm64, got $(lipo -archs "$BIN")" >&2; exit 1; }
+for arch in x86_64 arm64; do
+  minos=$(otool -l -arch "$arch" "$BIN" | grep -A3 LC_BUILD_VERSION | awk '/minos/ {print $2}')
+  [ "$minos" = "14.0" ] || { echo "release: $arch minimum macOS is $minos, expected 14.0" >&2; exit 1; }
+done
+
 rm -f "$ZIP"
 ditto -c -k --keepParent "$APP" "$ZIP"
 if [ -n "${NOTARY_PROFILE:-}" ]; then
