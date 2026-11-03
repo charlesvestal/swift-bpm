@@ -12,8 +12,7 @@ struct AnalysisFeatureTests {
     let context: ModelContext
 
     init() throws {
-        container = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
-                                       configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        container = try AppSchema.inMemoryContainer()
         context = container.mainContext
     }
 
@@ -147,8 +146,7 @@ struct AnalysisFeatureTests {
 @MainActor
 struct HealthExporterTests {
     @Test func writesEachReadingOnceToNewFiles() throws {
-        let container = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
-                                           configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try AppSchema.inMemoryContainer()
         let context = container.mainContext
         let suite = "health-test-\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
@@ -224,8 +222,7 @@ struct HealthFolderAccessTests {
 @MainActor
 struct DemoDataTests {
     @Test func demoDataIsSeparateRepeatableAndRemovable() throws {
-        let container = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
-                                           configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try AppSchema.inMemoryContainer()
         let context = container.mainContext
         let now = Date()
         let added = try DemoData.insert(into: context, now: now)

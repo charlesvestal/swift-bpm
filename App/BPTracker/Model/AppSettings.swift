@@ -11,6 +11,7 @@ enum AppSettings {
     static let useMedian = "useMedian"
     /// A `BPGuideline` raw value.
     static let guideline = "guideline"
+    static let showMenuBarExtra = "showMenuBarExtra"
     static let backupsEnabled = "backupsEnabled"
     static let backupsToKeep = "backupsToKeep"
     static let backupFolderBookmark = "backupFolderBookmark"
@@ -28,6 +29,7 @@ enum AppSettings {
             groupWindowMinutes: 0,
             useMedian: false,
             guideline: BPGuideline.esh2023.rawValue,
+            showMenuBarExtra: true,
             backupsEnabled: true,
             backupsToKeep: 10,
             healthEnabled: false,

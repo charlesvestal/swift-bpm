@@ -1,11 +1,14 @@
 import AppKit
 import BPMKit
+import ServiceManagement
 import SwiftData
 import SwiftUI
 
 struct SettingsView: View {
     var body: some View {
         TabView {
+            GeneralSettingsView()
+                .tabItem { Label("General", systemImage: "gearshape") }
             DevicesSettingsView()
                 .tabItem { Label("Monitors", systemImage: "cable.connector") }
             AnalysisSettingsView()
@@ -16,6 +19,45 @@ struct SettingsView: View {
                 .tabItem { Label("Apple Health", systemImage: "heart") }
         }
         .frame(width: 520, height: 600)
+    }
+}
+
+private struct GeneralSettingsView: View {
+    @AppStorage(AppSettings.showMenuBarExtra) private var showMenuBarExtra = true
+    @State private var loginStatus = SMAppService.mainApp.status
+    @State private var error: String?
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Open at login", isOn: Binding(get: { loginStatus == .enabled || loginStatus == .requiresApproval },
+                                                       set: { setOpenAtLogin($0) }))
+                if loginStatus == .requiresApproval {
+                    HStack {
+                        Text("Allow Blood Pressure in System Settings › General › Login Items.")
+                            .font(.caption).foregroundStyle(.orange)
+                        Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
+                    }
+                }
+                Toggle("Show in menu bar", isOn: $showMenuBarExtra)
+                if let error { Text(error).font(.caption).foregroundStyle(.red) }
+            } footer: {
+                Text("Auto-import, Apple Health and backups only run while the app is open. With it opening at login and in the menu bar, they keep working after you close the window.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear { loginStatus = SMAppService.mainApp.status }
+    }
+
+    private func setOpenAtLogin(_ on: Bool) {
+        do {
+            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+        loginStatus = SMAppService.mainApp.status
     }
 }
 

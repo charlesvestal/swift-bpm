@@ -3,6 +3,9 @@ import SwiftUI
 
 @main
 struct BPTrackerApp: App {
+    static let mainWindowID = "main"
+    @AppStorage(AppSettings.showMenuBarExtra) private var showMenuBarExtra = true
+
     let container: ModelContainer
     @State private var autoImporter: BPM25AutoImporter
     @State private var backups: BackupManager
@@ -11,14 +14,15 @@ struct BPTrackerApp: App {
     init() {
         AppSettings.registerDefaults()
         do {
-            container = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self)
+            StoreSnapshot.takeIfNeeded()
+            container = try AppSchema.container(ModelConfiguration(schema: AppSchema.current))
         } catch {
             fatalError("Could not open the data store: \(error)")
         }
         let backups = BackupManager(context: container.mainContext)
         let health = HealthExporter(context: container.mainContext)
         let importer = BPM25AutoImporter(context: container.mainContext) { summary in
-            if summary.added > 0 { try? backups.backUpNow() }
+            if summary.added > 0 { _ = try? backups.backUpNow() }
         }
         // Tests use their own in-memory stores and must not touch the device or backups.
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
@@ -35,7 +39,7 @@ struct BPTrackerApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: Self.mainWindowID) {
             ContentView()
                 .environment(autoImporter)
                 .environment(backups)
@@ -50,6 +54,12 @@ struct BPTrackerApp: App {
             }
         }
         #endif
+
+        MenuBarExtra("Blood Pressure", systemImage: "heart.fill", isInserted: $showMenuBarExtra) {
+            MenuBarStatus()
+                .environment(autoImporter)
+                .environment(health)
+        }
 
         Settings {
             SettingsView()

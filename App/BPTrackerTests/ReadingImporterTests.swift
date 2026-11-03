@@ -12,8 +12,7 @@ struct ReadingImporterTests {
     let importer: ReadingImporter
 
     init() throws {
-        container = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
-                                       configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        container = try AppSchema.inMemoryContainer()
         context = container.mainContext
         importer = ReadingImporter(context: context)
     }
@@ -86,8 +85,7 @@ struct ReadingImporterTests {
         #expect(again.added == 0 && again.duplicates == 2)
 
         // Into a fresh store: profile recreated, and a later device download is recognised.
-        let fresh = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
-                                       configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let fresh = try AppSchema.inMemoryContainer()
         let freshImporter = ReadingImporter(context: fresh.mainContext)
         let restored = try freshImporter.importCSV(try ReadingsCSV.decode(csv), fallbackProfile: Profile(name: "unused"))
         #expect(restored.added == 2 && restored.createdProfiles == ["Alex"])
@@ -179,8 +177,7 @@ struct ReadingImporterTests {
     @Test(arguments: ["Me", "User 2"])
     func deletingProfileFromOnDiskStore(name: String) throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("delete-\(UUID().uuidString).store")
-        let disk = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
-                                      configurations: ModelConfiguration(url: url))
+        let disk = try AppSchema.container(ModelConfiguration(schema: AppSchema.current, url: url))
         let context = disk.mainContext
         context.undoManager = UndoManager()
         let importer = ReadingImporter(context: context)
@@ -195,8 +192,7 @@ struct ReadingImporterTests {
 
         // Reopen, as on app launch, and let the importer touch the readings
         // the way the auto-importer does before the profile is deleted.
-        let reopened = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
-                                          configurations: ModelConfiguration(url: url))
+        let reopened = try AppSchema.container(ModelConfiguration(schema: AppSchema.current, url: url))
         let fresh = reopened.mainContext
         fresh.undoManager = UndoManager()
         _ = try ReadingImporter(context: fresh).importDeviceReadings(download)
@@ -256,5 +252,54 @@ struct BPM25HardwareTests {
         let readings = try await source.fetchReadings { _ in }
         print("BPM25 hardware test: \(readings.count) readings: " + readings.map { "user \($0.deviceUser ?? 0) \($0.systolic)/\($0.diastolic) \($0.timestamp)" }.joined(separator: "; "))
         #expect(!readings.isEmpty)
+    }
+}
+
+@MainActor
+struct SchemaMigrationTests {
+    /// Stores created before versioning used the plain model list; opening one
+    /// with the versioned schema and migration plan must keep everything.
+    @Test func opensStoreCreatedBeforeVersioning() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "legacy-\(UUID().uuidString).store")
+        defer { for suffix in ["", "-wal", "-shm"] { try? FileManager.default.removeItem(atPath: url.path + suffix) } }
+        do {
+            let legacy = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
+                                            configurations: ModelConfiguration(url: url))
+            let p = Profile(name: "Me")
+            legacy.mainContext.insert(p)
+            legacy.mainContext.insert(Reading(timestamp: Date(timeIntervalSince1970: 1_800_000_000), systolic: 123, diastolic: 75,
+                                              pulse: 60, sourceName: "Veroval BPM25", deviceID: "veroval-bpm25", deviceUser: 1,
+                                              hidden: true, profile: p))
+            legacy.mainContext.insert(DeletedReading(key: "k"))
+            try legacy.mainContext.save()
+        }
+        let versioned = try AppSchema.container(ModelConfiguration(schema: AppSchema.current, url: url))
+        let readings = try versioned.mainContext.fetch(FetchDescriptor<Reading>())
+        #expect(readings.count == 1)
+        #expect(readings.first?.profile?.name == "Me" && readings.first?.hidden == true)
+        #expect(try versioned.mainContext.fetch(FetchDescriptor<DeletedReading>()).count == 1)
+    }
+
+    @Test func snapshotIsTakenOncePerVersion() throws {
+        let dir = FileManager.default.temporaryDirectory.appending(path: "snap-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let store = dir.appending(path: "default.store")
+        try Data("db".utf8).write(to: store)
+        try Data("wal".utf8).write(to: URL(fileURLWithPath: store.path + "-wal"))
+        let folder = dir.appending(path: "Store Snapshots")
+
+        StoreSnapshot.takeIfNeeded(store: store, folder: folder, version: "0.1-1")
+        try Data("changed".utf8).write(to: store)
+        StoreSnapshot.takeIfNeeded(store: store, folder: folder, version: "0.1-1") // same version: untouched
+        let snap = folder.appending(path: "before 0.1-1")
+        #expect(try String(contentsOf: snap.appending(path: "default.store"), encoding: .utf8) == "db")
+        #expect(FileManager.default.fileExists(atPath: snap.appending(path: "default.store-wal").path))
+
+        for v in ["0.2-1", "0.3-1", "0.4-1"] {
+            StoreSnapshot.takeIfNeeded(store: store, folder: folder, version: v)
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path).count == StoreSnapshot.keep)
     }
 }

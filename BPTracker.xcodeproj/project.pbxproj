@@ -14,10 +14,12 @@
 		319E2A0F926AE39169F28620 /* Blood Pressure to Health.shortcut in Resources */ = {isa = PBXBuildFile; fileRef = 63909FAAFE2B6F88299ADC3D /* Blood Pressure to Health.shortcut */; };
 		331D76EA90F1CD332B356606 /* Style.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F682EE7F4B7A2DB86FED1F1 /* Style.swift */; };
 		3DBFFA23D9485FD33E0EF405 /* PDFReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6E35F9CEFDA128ACBF78A6 /* PDFReport.swift */; };
+		47BA7581944891B1369D5D96 /* StoreSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F772C0C468710F6DBBFDA23 /* StoreSnapshot.swift */; };
 		4B42E8F2254305E0DC40BDDB /* ExportFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4860BFAE3C3F62A89B4A661A /* ExportFile.swift */; };
 		59B447A5FAFAC8F47BFD31B8 /* ProfileSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04E4B1A8A27413D597C1863 /* ProfileSidebar.swift */; };
 		59DAE0AA72EE596AFC8081AA /* ReadingEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 930D400E962DD68C032434C0 /* ReadingEditor.swift */; };
 		5B6139F492FCD2146DD1374C /* BackupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58DCC4A19B028241FC47B8A4 /* BackupManager.swift */; };
+		5FBAC3883F481F64BEC4DBAC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 369DF36272AF36549FAB92F7 /* Assets.xcassets */; };
 		62C32CB0E1316165323E2650 /* Period.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D225D507E53371455D1F6C4 /* Period.swift */; };
 		73AEDCEF2ED698AA97D66DBF /* BPMKit in Frameworks */ = {isa = PBXBuildFile; productRef = 11742FD5C2747DFFF9DAF4A8 /* BPMKit */; };
 		75F661A605E113231CF4A065 /* DemoData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F9ABDF19124E3FCCF6E2E7B /* DemoData.swift */; };
@@ -27,6 +29,7 @@
 		824B628B1BBBEA31D149FEEA /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5936C346A2D13444A362111 /* StatisticsView.swift */; };
 		83248A8A98367D23371D8B66 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35F2BD87902B42E8183CEBB /* Models.swift */; };
 		89BBCE1A485E12C7F136C63A /* ReadingsChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 304DE402DBFE181B6B5528C9 /* ReadingsChart.swift */; };
+		921F4613DDC9D3FD05E6147A /* MenuBarStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70B0083E992DF78DE5FBFEC5 /* MenuBarStatus.swift */; };
 		93E88D6F0AECB0ED57ACE7BA /* DeviceImportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8BA23D23B0B8511EAD4A73 /* DeviceImportSheet.swift */; };
 		950491E2A08B88125DA14E3A /* BPMKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1EDBE9E2F8C91C30B4B97036 /* BPMKit */; };
 		97F88A7DFDC7D1F27ED5467C /* BPTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70F2C801BC79169C7DF3AFA /* BPTrackerApp.swift */; };
@@ -56,8 +59,10 @@
 		1376D0FC7B6720A9A49CE290 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1A6F29DB80B55514462FA097 /* ProfileDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileDetailView.swift; sourceTree = "<group>"; };
 		2C8BA23D23B0B8511EAD4A73 /* DeviceImportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceImportSheet.swift; sourceTree = "<group>"; };
+		2F772C0C468710F6DBBFDA23 /* StoreSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreSnapshot.swift; sourceTree = "<group>"; };
 		2F9ABDF19124E3FCCF6E2E7B /* DemoData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoData.swift; sourceTree = "<group>"; };
 		304DE402DBFE181B6B5528C9 /* ReadingsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingsChart.swift; sourceTree = "<group>"; };
+		369DF36272AF36549FAB92F7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		387C3C0A6209342C7BE57267 /* ReadingsTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingsTable.swift; sourceTree = "<group>"; };
 		3CD21E0CF52AE27B99D4F7F7 /* ReadingImporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingImporterTests.swift; sourceTree = "<group>"; };
 		4860BFAE3C3F62A89B4A661A /* ExportFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportFile.swift; sourceTree = "<group>"; };
@@ -66,6 +71,7 @@
 		607F2946690AE2F5090B0D8F /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		63909FAAFE2B6F88299ADC3D /* Blood Pressure to Health.shortcut */ = {isa = PBXFileReference; path = "Blood Pressure to Health.shortcut"; sourceTree = "<group>"; };
 		6D225D507E53371455D1F6C4 /* Period.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Period.swift; sourceTree = "<group>"; };
+		70B0083E992DF78DE5FBFEC5 /* MenuBarStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatus.swift; sourceTree = "<group>"; };
 		7BAB1E355D06AAC48E61D43B /* BPM25AutoImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BPM25AutoImporter.swift; sourceTree = "<group>"; };
 		8D6E35F9CEFDA128ACBF78A6 /* PDFReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFReport.swift; sourceTree = "<group>"; };
 		930D400E962DD68C032434C0 /* ReadingEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingEditor.swift; sourceTree = "<group>"; };
@@ -133,6 +139,7 @@
 				2C8BA23D23B0B8511EAD4A73 /* DeviceImportSheet.swift */,
 				10A611AF8B29584EAD0E6E39 /* DevicesSettingsView.swift */,
 				4FE42EED89E76DBCA9C7E9FA /* ForeignImportSheet.swift */,
+				70B0083E992DF78DE5FBFEC5 /* MenuBarStatus.swift */,
 				1A6F29DB80B55514462FA097 /* ProfileDetailView.swift */,
 				D04E4B1A8A27413D597C1863 /* ProfileSidebar.swift */,
 				930D400E962DD68C032434C0 /* ReadingEditor.swift */,
@@ -148,6 +155,7 @@
 		60BE21A867351CD3E1A0D27B /* BPTracker */ = {
 			isa = PBXGroup;
 			children = (
+				369DF36272AF36549FAB92F7 /* Assets.xcassets */,
 				C1AADFE1AB4FB8038BF2EB21 /* BPTracker.entitlements */,
 				C70F2C801BC79169C7DF3AFA /* BPTrackerApp.swift */,
 				9CF3F08AE04118FC05F3B5D8 /* Info.plist */,
@@ -215,6 +223,7 @@
 				6D225D507E53371455D1F6C4 /* Period.swift */,
 				D82C46B1FE9DD6706DC82266 /* ReadingAnalysis.swift */,
 				CE941F9032768DF7CAE855B8 /* ReadingImporter.swift */,
+				2F772C0C468710F6DBBFDA23 /* StoreSnapshot.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -309,6 +318,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5FBAC3883F481F64BEC4DBAC /* Assets.xcassets in Resources */,
 				319E2A0F926AE39169F28620 /* Blood Pressure to Health.shortcut in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -333,6 +343,7 @@
 				4B42E8F2254305E0DC40BDDB /* ExportFile.swift in Sources */,
 				050874D48B237900ABC5639C /* ForeignImportSheet.swift in Sources */,
 				D24B70B15F9B60B54EDDBECD /* HealthExporter.swift in Sources */,
+				921F4613DDC9D3FD05E6147A /* MenuBarStatus.swift in Sources */,
 				83248A8A98367D23371D8B66 /* Models.swift in Sources */,
 				3DBFFA23D9485FD33E0EF405 /* PDFReport.swift in Sources */,
 				62C32CB0E1316165323E2650 /* Period.swift in Sources */,
@@ -345,6 +356,7 @@
 				78D8CD3D1B3887124F974789 /* ReadingsTable.swift in Sources */,
 				D464F2245D007E394A6687FE /* SettingsView.swift in Sources */,
 				824B628B1BBBEA31D149FEEA /* StatisticsView.swift in Sources */,
+				47BA7581944891B1369D5D96 /* StoreSnapshot.swift in Sources */,
 				331D76EA90F1CD332B356606 /* Style.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -542,6 +554,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/BPTracker/BPTracker.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = App/BPTracker/Info.plist;
@@ -549,6 +563,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--timestamp";
 				PRODUCT_BUNDLE_IDENTIFIER = com.charlesvestal.BPTracker;
 				PRODUCT_MODULE_NAME = BPTracker;
 				PRODUCT_NAME = "Blood Pressure";

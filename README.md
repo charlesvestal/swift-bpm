@@ -1,5 +1,7 @@
 # swift-bpm
 
+[![CI](https://github.com/charlesvestal/swift-bpm/actions/workflows/ci.yml/badge.svg)](https://github.com/charlesvestal/swift-bpm/actions/workflows/ci.yml)
+
 Blood-pressure tracking for macOS (SwiftUI, SwiftData, Swift Charts). It
 downloads readings from a Hartmann Veroval BPM25 over USB or any monitor that
 implements the standard Bluetooth Blood Pressure Service, and also takes manual
@@ -56,6 +58,12 @@ TEST_RUNNER_BPM25_HARDWARE_TEST=1 xcodebuild -scheme BPTracker -destination 'pla
   while the app runs. The shortcut ships with the app (Settings › Apple Health ›
   Add to Shortcuts) and is generated and signed by `Tools/make-health-shortcut.py`;
   it reads iCloud Drive › Shortcuts › Blood Pressure.
+
+## Releases
+
+`Tools/release.sh` builds a Developer ID-signed Release and zips it; with
+`NOTARY_PROFILE=<profile>` it also notarizes and staples, and with `INSTALL=1`
+it installs to /Applications. The icon is drawn by `Tools/make-icon.swift`.
 
 ## Data model
 

@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    # Xcode 26 / Swift 6.2: the app target uses default MainActor isolation.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: BPMKit tests
+        run: swift test
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: App tests
+        # Ad-hoc signing: no certificates on CI. The hardware and sample tests stay off.
+        run: |
+          xcodebuild -project BPTracker.xcodeproj -scheme BPTracker -destination 'platform=macOS' \
+            -derivedDataPath .build/xcode test \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=
