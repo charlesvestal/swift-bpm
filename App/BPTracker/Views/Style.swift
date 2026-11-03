@@ -2,14 +2,14 @@ import BPMKit
 import SwiftUI
 
 extension BPCategory {
+    /// Green for the lowest category through yellow, orange and red to purple
+    /// for the highest, whatever the number of categories in the guideline.
     var color: Color {
-        switch self {
-        case .normal: .green
-        case .elevated: .yellow
-        case .stage1: .orange
-        case .stage2: .red
-        case .crisis: .purple
+        let palette: [Color] = switch guideline {
+        case .esh2023: [.green, .mint, .yellow, .orange, .red, .purple]
+        case .accAha2017: [.green, .yellow, .orange, .red, .purple]
         }
+        return palette[rank]
     }
 }
 

@@ -24,10 +24,14 @@ public struct BPM25Source: ReadingSource {
     public static let deviceName = "Veroval BPM25"
 
     public let portPath: String
+    /// How long to wait for the monitor to start answering. It replies at
+    /// once when in PC mode, so polling callers can keep this short.
+    public var firstByteTimeout: Duration
     public var name: String { "\(Self.deviceName) (USB)" }
 
-    public init(portPath: String) {
+    public init(portPath: String, firstByteTimeout: Duration = .seconds(3)) {
         self.portPath = portPath
+        self.firstByteTimeout = firstByteTimeout
     }
 
     /// One source per connected 067b:2303 bridge.
@@ -37,9 +41,9 @@ public struct BPM25Source: ReadingSource {
     }
 
     public func fetchReadings(progress: @escaping @Sendable (String) -> Void) async throws -> [DeviceReading] {
-        let path = portPath
+        let path = portPath, timeout = firstByteTimeout
         let bytes = try await Task.detached {
-            try Self.download(portPath: path, progress: progress)
+            try Self.download(portPath: path, firstByteTimeout: timeout, progress: progress)
         }.value
         let response = BPM25.parse(bytes)
         guard response.isValid else { throw BPM25Error.invalidResponse(response.issues.isEmpty ? ["checksum mismatch"] : response.issues) }
@@ -57,7 +61,7 @@ public struct BPM25Source: ReadingSource {
         }
     }
 
-    static func download(portPath: String, progress: @Sendable (String) -> Void) throws -> [UInt8] {
+    static func download(portPath: String, firstByteTimeout: Duration, progress: @Sendable (String) -> Void) throws -> [UInt8] {
         let port = SerialPort(path: portPath)
         progress("Opening \(portPath)…")
         try port.open(baudRate: BPM25.baudRate)
@@ -65,7 +69,7 @@ public struct BPM25Source: ReadingSource {
 
         progress("Reading memory…")
         try port.write(BPM25.requestReadings)
-        let bytes = try port.read(firstByteTimeout: .seconds(3), idleTimeout: .milliseconds(500)).flatMap(\.bytes)
+        let bytes = try port.read(firstByteTimeout: firstByteTimeout, idleTimeout: .milliseconds(500)).flatMap(\.bytes)
         // Ends the session; the device does not answer it.
         try? port.write(BPM25.requestClose)
         guard !bytes.isEmpty else { throw BPM25Error.noResponse }

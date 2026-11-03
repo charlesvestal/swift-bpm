@@ -36,10 +36,14 @@ final class Reading {
     var deviceUser: Int?
     var note: String
     var profile: Profile?
+    /// Kept, but left out of charts, statistics and reports.
+    var hidden: Bool = false
+    /// Already written to the Apple Health hand-off folder (see HealthExporter).
+    var sentToHealth: Bool = false
 
     init(timestamp: Date, systolic: Int, diastolic: Int, pulse: Int?, irregularHeartbeat: Bool = false,
          bodyMovement: Bool = false, sourceName: String, deviceID: String, deviceUser: Int?, note: String = "",
-         profile: Profile?) {
+         hidden: Bool = false, profile: Profile?) {
         key = ReadingKey.make(deviceID: deviceID, deviceUser: deviceUser, timestamp: timestamp)
         self.timestamp = timestamp
         self.systolic = systolic
@@ -51,11 +55,22 @@ final class Reading {
         self.deviceID = deviceID
         self.deviceUser = deviceUser
         self.note = note
+        self.hidden = hidden
         self.profile = profile
     }
 
+    var point: BPPoint {
+        BPPoint(timestamp: timestamp, systolic: Double(systolic), diastolic: Double(diastolic),
+                pulse: pulse.map(Double.init), irregularHeartbeat: irregularHeartbeat)
+    }
+
+    var meanArterialPressure: Int { Int(point.meanArterialPressure.rounded()) }
+    var pulsePressure: Int { systolic - diastolic }
+
     var isManual: Bool { deviceID.hasPrefix("manual:") }
-    var category: BPCategory { BPCategory(systolic: systolic, diastolic: diastolic) }
+    func category(in guideline: BPGuideline) -> BPCategory {
+        guideline.category(systolic: systolic, diastolic: diastolic)
+    }
 
     func refreshKey() {
         key = ReadingKey.make(deviceID: deviceID, deviceUser: deviceUser, timestamp: timestamp)

@@ -28,6 +28,35 @@ TEST_RUNNER_BPM25_HARDWARE_TEST=1 xcodebuild -scheme BPTracker -destination 'pla
   test -only-testing:BPTrackerTests/BPM25HardwareTests
 ```
 
+## Features
+
+- Profiles; each monitor user is linked to a profile or set to "Don't import".
+- Veroval BPM25 auto-import over USB when the monitor is in PC mode; Bluetooth
+  Blood Pressure Service import; manual entry.
+- Overview: summary tiles, trend chart with configurable thresholds, readings
+  table with MAP and pulse pressure. Readings can be edited, moved, hidden
+  (kept but left out of analysis) or deleted, with undo.
+- Categories per reading from ESH 2023 (default, as on European monitors such
+  as Veroval) or ACC/AHA 2017, chosen in Settings › Analysis.
+- Statistics: average or median by time of day, category distribution, and
+  daily/weekly/monthly ranges. Back-to-back readings can be averaged.
+- Periods: rolling (7/30/90 days, 1 year, all) or calendar week/month/year
+  with paging.
+- CSV import/export, import from other apps' exports (presets for Beurer,
+  Medisana, Microlife, OMRON, Sanitas, Veroval, or a custom column mapping),
+  PDF report (export or share), and daily CSV backups that keep the newest N.
+- Apple Health, via an iPhone shortcut: HealthKit has no store on the Mac, so
+  new readings of one profile are written to an iCloud Drive folder (one new
+  file per batch, lines like `2026-11-02 07:05,128,82,66`). A shortcut logs
+  them with Log Health Sample and deletes each file. It skips a reading when
+  Health already has a systolic sample in the same minute (it compares
+  formatted start times, since the Find filter's "between" only works by day),
+  and logs heart rate only when the pulse is above 0. Run it by hand or from a
+  Time of Day automation; the Mac side checks for new readings every minute
+  while the app runs. The shortcut ships with the app (Settings › Apple Health ›
+  Add to Shortcuts) and is generated and signed by `Tools/make-health-shortcut.py`;
+  it reads iCloud Drive › Shortcuts › Blood Pressure.
+
 ## Data model
 
 - Profiles hold readings. Each device user (BPM25 user 1/2, or a Bluetooth
@@ -82,9 +111,15 @@ users). Items marked *unconfirmed* still need a capture that exercises them.
 These projects were read as protocol documentation only. No code was copied
 from them (they are GPL/AGPL licensed):
 
-- [codeberg.org/LazyT/ubpm](https://codeberg.org/LazyT/ubpm) – Veroval BPM25/GCE604 plugin
+- [codeberg.org/LazyT/ubpm](https://codeberg.org/LazyT/ubpm) – Veroval BPM25/GCE604 plugin, and the
+  migration presets (column layouts and date formats of vendor CSV exports) behind
+  `ColumnMapping.presets`
 - [github.com/JimKnopfIoT/harbour-svero](https://github.com/JimKnopfIoT/harbour-svero)
 - [github.com/ignisf/vdc_export](https://github.com/ignisf/vdc_export) – this one covers the
   Veroval *duo control*, which uses a separate ASCII protocol over CDC-ACM
   (`?MRN1`, `?MDR1A`). It is not the BPM25 protocol, but it could become a
   third `ReadingSource` later.
+
+## License
+
+MIT; see [LICENSE](LICENSE).

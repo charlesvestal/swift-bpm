@@ -48,9 +48,10 @@ struct ReadingImporter {
     let context: ModelContext
 
     func existingKeys() throws -> Set<String> {
-        var descriptor = FetchDescriptor<Reading>()
-        descriptor.propertiesToFetch = [\.key]
-        return Set(try context.fetch(descriptor).map(\.key))
+        // Fetch whole objects: partially fetched models left in the context
+        // crash a later cascade delete when undo is on ("A snapshot should
+        // exist before creating a new snapshot for undo").
+        Set(try context.fetch(FetchDescriptor<Reading>()).map(\.key))
     }
 
     func deletedKeys() throws -> Set<String> {
@@ -85,6 +86,28 @@ struct ReadingImporter {
                               profile: profile, ignored: profile == nil)
         context.insert(link)
         return link
+    }
+
+    /// Links every unlinked device user in `readings` without asking: first to
+    /// profiles that have no device yet (oldest first), then to new profiles.
+    /// Returns the names of profiles it created.
+    func autoLinkUnlinkedUsers(in readings: [DeviceReading]) throws -> [String] {
+        let unlinked = try unlinkedUsers(in: readings)
+        guard !unlinked.isEmpty else { return [] }
+        var unclaimed = try context.fetch(FetchDescriptor<Profile>(sortBy: [SortDescriptor(\.createdAt)]))
+            .filter { $0.deviceLinks.isEmpty }
+        var created: [String] = []
+        for ref in unlinked {
+            if !unclaimed.isEmpty {
+                try linkDeviceUser(ref, to: unclaimed.removeFirst())
+            } else {
+                let profile = Profile(name: ref.suggestedProfileName)
+                context.insert(profile)
+                try linkDeviceUser(ref, to: profile)
+                created.append(profile.name)
+            }
+        }
+        return created
     }
 
     /// Stores downloaded readings in the profiles their device users are
@@ -170,7 +193,7 @@ struct ReadingImporter {
                                    pulse: row.pulse, irregularHeartbeat: row.irregularHeartbeat,
                                    bodyMovement: row.bodyMovement, sourceName: row.source ?? "CSV import",
                                    deviceID: deviceID, deviceUser: row.deviceUser, note: row.note ?? "",
-                                   profile: profile))
+                                   hidden: row.hidden, profile: profile))
             summary.added += 1
         }
         try context.save()
@@ -191,6 +214,26 @@ struct ReadingImporter {
     /// A reading entered again by hand should not stay blocked from import.
     func clearDeletedMarker(for key: String) throws {
         try context.delete(model: DeletedReading.self, where: #Predicate { $0.key == key })
+    }
+
+    /// Deletes a profile and its readings. Its monitor users are switched to
+    /// "Don't import" rather than forgotten, so auto-import does not recreate
+    /// the profile on the next download.
+    ///
+    /// Readings are deleted one by one instead of through the cascade rule:
+    /// a cascade over readings not yet loaded into the context crashes
+    /// SwiftData when undo is on.
+    func deleteProfile(_ profile: Profile) throws {
+        for link in profile.deviceLinks {
+            link.profile = nil
+            link.ignored = true
+        }
+        for reading in profile.readings {
+            _ = reading.key // load it before deleting
+            context.delete(reading)
+        }
+        context.delete(profile)
+        try context.save()
     }
 
     /// Lets previously deleted readings be imported again.
@@ -230,7 +273,7 @@ struct ReadingImporter {
             CSVReading(timestamp: $0.timestamp, profile: $0.profile?.name, systolic: $0.systolic, diastolic: $0.diastolic,
                        pulse: $0.pulse, irregularHeartbeat: $0.irregularHeartbeat, bodyMovement: $0.bodyMovement,
                        source: $0.sourceName, deviceID: $0.deviceID, deviceUser: $0.deviceUser,
-                       note: $0.note.isEmpty ? nil : $0.note)
+                       note: $0.note.isEmpty ? nil : $0.note, hidden: $0.hidden)
         }
     }
 }

@@ -30,7 +30,8 @@ struct ProfileSidebar: View {
         }
         .navigationSplitViewColumnWidth(min: 180, ideal: 210)
         .safeAreaInset(edge: .bottom) {
-            HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                AutoImportStatusView()
                 Button {
                     newName = ""
                     adding = true
@@ -38,7 +39,6 @@ struct ProfileSidebar: View {
                     Label("New Profile", systemImage: "plus")
                 }
                 .buttonStyle(.borderless)
-                Spacer()
             }
             .padding(10)
         }
@@ -70,11 +70,10 @@ struct ProfileSidebar: View {
                             presenting: deleting) { profile in
             Button("Delete Profile and \(profile.readings.count) Readings", role: .destructive) {
                 if selection == profile { selection = nil }
-                context.delete(profile)
-                try? context.save()
+                try? ReadingImporter(context: context).deleteProfile(profile)
             }
         } message: { _ in
-            Text("This cannot be undone. Export a CSV first if you want to keep the readings.")
+            Text("Its monitor users will be set to \"Don't import\" (change that in Settings). You can undo with ⌘Z.")
         }
     }
 }

@@ -9,6 +9,7 @@ struct DeviceImportSheet: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(BPM25AutoImporter.self) private var autoImporter
     @Query(sort: \Profile.createdAt) private var profiles: [Profile]
 
     private enum Phase {
@@ -81,7 +82,11 @@ struct DeviceImportSheet: View {
         .padding(24)
         .frame(width: 480)
         // Dismissing the sheet cancels the task, which cancels the download.
-        .task { await download() }
+        .task {
+            await autoImporter.suspend()
+            await download()
+        }
+        .onDisappear { autoImporter.resume() }
     }
 
     @ViewBuilder

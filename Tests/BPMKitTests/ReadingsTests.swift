@@ -30,11 +30,28 @@ struct ReadingKeyTests {
 
 struct BPCategoryTests {
     @Test(arguments: [
-        (115, 75, BPCategory.normal), (125, 78, .elevated), (128, 82, .stage1), (135, 70, .stage1),
-        (142, 85, .stage2), (120, 95, .stage2), (185, 100, .crisis), (150, 125, .crisis),
+        (115, 75, 0), (125, 78, 1), (128, 82, 2), (135, 70, 2),
+        (142, 85, 3), (120, 95, 3), (185, 100, 4), (150, 125, 4),
     ])
-    func classifies(sys: Int, dia: Int, expected: BPCategory) {
-        #expect(BPCategory(systolic: sys, diastolic: dia) == expected)
+    func classifiesAccAha(sys: Int, dia: Int, rank: Int) {
+        #expect(BPGuideline.accAha2017.category(systolic: sys, diastolic: dia).rank == rank)
+    }
+
+    @Test(arguments: [
+        (115, 75, "Optimal"), (123, 75, "Normal"), (118, 82, "Normal"), (135, 70, "High normal"),
+        (125, 87, "High normal"), (145, 85, "Grade 1 hypertension"), (150, 80, "Grade 1 hypertension"),
+        (130, 104, "Grade 2 hypertension"), (165, 95, "Grade 2 hypertension"), (182, 90, "Grade 3 hypertension"),
+        (120, 112, "Grade 3 hypertension"),
+    ])
+    func classifiesEsh(sys: Int, dia: Int, title: String) {
+        #expect(BPGuideline.esh2023.category(systolic: sys, diastolic: dia).title == title)
+    }
+
+    @Test func sameReadingDiffersByGuideline() {
+        #expect(BPGuideline.accAha2017.category(systolic: 123, diastolic: 75).title == "Elevated")
+        #expect(BPGuideline.esh2023.category(systolic: 123, diastolic: 75).title == "Normal")
+        #expect(BPGuideline.esh2023.categories.map(\.severity).first == 0)
+        #expect(BPGuideline.esh2023.categories.map(\.severity).last == 1)
     }
 }
 

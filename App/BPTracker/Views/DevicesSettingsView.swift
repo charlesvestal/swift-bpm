@@ -7,6 +7,7 @@ struct DevicesSettingsView: View {
     @Query(sort: [SortDescriptor(\DeviceLink.deviceName), SortDescriptor(\DeviceLink.deviceUser)]) private var links: [DeviceLink]
     @Query(sort: \Profile.createdAt) private var profiles: [Profile]
     @Query private var deleted: [DeletedReading]
+    @AppStorage(BPM25AutoImporter.enabledKey) private var autoImport = true
     @State private var error: String?
 
     /// Picker value: a profile, or "Don't import".
@@ -17,6 +18,12 @@ struct DevicesSettingsView: View {
 
     var body: some View {
         Form {
+            Section {
+                Toggle("Import automatically when a Veroval BPM25 is connected", isOn: $autoImport)
+            } footer: {
+                Text("Readings are imported as soon as the monitor is in PC mode. New monitor users get their own profile, or one that has no monitor yet.")
+                    .foregroundStyle(.secondary)
+            }
             Section {
                 if links.isEmpty {
                     Text("No monitors yet. Device users appear here after the first import.")
@@ -66,7 +73,6 @@ struct DevicesSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 440)
     }
 
     private func targetBinding(for link: DeviceLink) -> Binding<Target> {

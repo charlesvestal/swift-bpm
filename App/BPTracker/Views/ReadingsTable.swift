@@ -1,8 +1,11 @@
+import BPMKit
 import SwiftData
 import SwiftUI
 
 struct ReadingsTable: View {
     let readings: [Reading]
+    let thresholds: BPThresholds
+    let guideline: BPGuideline
     @Binding var editor: EditorRequest?
 
     @Environment(\.modelContext) private var context
@@ -22,6 +25,10 @@ struct ReadingsTable: View {
                 Spacer()
                 Button("Edit…") { if let r = selectedReadings.first { editor = .edit(r) } }
                     .disabled(selectedReadings.count != 1)
+                let allHidden = !selectedReadings.isEmpty && selectedReadings.allSatisfy(\.hidden)
+                Button(allHidden ? "Show" : "Hide") { setHidden(selectedReadings, !allHidden) }
+                    .disabled(selectedReadings.isEmpty)
+                    .help("Hidden readings are kept but left out of charts, statistics and reports")
                 Button("Delete…", role: .destructive) { pendingDelete = selectedReadings }
                     .disabled(selectedReadings.isEmpty)
             }
@@ -54,19 +61,36 @@ struct ReadingsTable: View {
     private var columns: some View {
         Table(readings, selection: $selection) {
             TableColumn("Date") { r in
-                Text(r.timestamp, format: .dateTime.year().month().day().hour().minute())
+                HStack(spacing: 4) {
+                    if r.hidden {
+                        Image(systemName: "eye.slash").foregroundStyle(.secondary).help("Hidden from charts and statistics")
+                    }
+                    Text(r.timestamp, format: .dateTime.year().month().day().hour().minute())
+                }
+                .opacity(r.hidden ? 0.5 : 1)
             }
-            .width(min: 140, ideal: 160)
+            .width(min: 150, ideal: 170)
             TableColumn("Pressure") { r in
                 Text(r.pressureText).monospacedDigit().fontWeight(.medium)
+                    .foregroundStyle(thresholds.isAbove(systolic: Double(r.systolic), diastolic: Double(r.diastolic)) ? .red : .primary)
+                    .opacity(r.hidden ? 0.5 : 1)
             }
             .width(min: 70, ideal: 80)
             TableColumn("Pulse") { r in
                 Text(r.pulse.map(String.init) ?? "–").monospacedDigit()
             }
             .width(min: 40, ideal: 50)
+            TableColumn("MAP") { r in
+                Text("\(r.meanArterialPressure)").monospacedDigit().foregroundStyle(.secondary)
+            }
+            .width(min: 36, ideal: 44)
+            TableColumn("PP") { r in
+                Text("\(r.pulsePressure)").monospacedDigit().foregroundStyle(.secondary)
+                    .help("Pulse pressure: systolic minus diastolic")
+            }
+            .width(min: 30, ideal: 40)
             TableColumn("Category") { r in
-                CategoryBadge(category: r.category)
+                CategoryBadge(category: r.category(in: guideline))
             }
             .width(min: 120, ideal: 160)
             TableColumn("IHB") { r in
@@ -95,6 +119,8 @@ struct ReadingsTable: View {
             Button("Edit…") { editor = .edit(reading) }
         }
         if !chosen.isEmpty {
+            let allHidden = chosen.allSatisfy(\.hidden)
+            Button(allHidden ? "Show in Charts and Statistics" : "Hide from Charts and Statistics") { setHidden(chosen, !allHidden) }
             Menu("Move to Profile") {
                 ForEach(profiles) { profile in
                     Button(profile.name) {
@@ -107,5 +133,10 @@ struct ReadingsTable: View {
             Divider()
             Button("Delete…", role: .destructive) { pendingDelete = chosen }
         }
+    }
+
+    private func setHidden(_ readings: [Reading], _ hidden: Bool) {
+        readings.forEach { $0.hidden = hidden }
+        try? context.save()
     }
 }

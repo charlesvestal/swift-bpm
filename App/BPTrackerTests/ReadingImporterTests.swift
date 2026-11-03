@@ -144,6 +144,74 @@ struct ReadingImporterTests {
         #expect(try importer.importDeviceReadings(download).added == 1)
     }
 
+    @Test func autoLinkUsesUnclaimedProfilesThenCreates() throws {
+        let me = Profile(name: "Me")
+        context.insert(me)
+        let download = [reading(0, user: 1), reading(1, user: 2)]
+        let created = try importer.autoLinkUnlinkedUsers(in: download)
+        #expect(created == ["User 2"])
+        #expect(try importer.link(for: DeviceUserRef(download[0]))?.profile == me)
+        #expect(try importer.importDeviceReadings(download).added == 2)
+        // Already linked or ignored users are left alone next time.
+        try importer.linkDeviceUser(DeviceUserRef(download[1]), to: nil)
+        #expect(try importer.autoLinkUnlinkedUsers(in: download).isEmpty)
+        #expect(try importer.link(for: DeviceUserRef(download[1]))?.ignored == true)
+    }
+
+    @Test(arguments: [false, true])
+    func deletingProfileCascades(withUndo: Bool) throws {
+        if withUndo { context.undoManager = UndoManager() }
+        let me = Profile(name: "Me"), other = Profile(name: "Other")
+        context.insert(me)
+        context.insert(other)
+        try importer.linkDeviceUser(DeviceUserRef(deviceID: "veroval-bpm25", deviceName: "V", deviceUser: 1), to: me)
+        _ = try importer.importDeviceReadings([reading(0, user: 1), reading(1, user: 1)])
+        try importer.delete([try readings(of: me)[0]])
+
+        try importer.deleteProfile(me)
+        #expect(try context.fetch(FetchDescriptor<Reading>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<DeviceLink>()).allSatisfy { $0.ignored && $0.profile == nil })
+        #expect(try context.fetch(FetchDescriptor<Profile>()).map(\.name) == ["Other"])
+    }
+
+    /// Mirrors the store state from the crash report: an on-disk store, both
+    /// monitor users linked, readings deleted, undo enabled as in the app.
+    @Test(arguments: ["Me", "User 2"])
+    func deletingProfileFromOnDiskStore(name: String) throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("delete-\(UUID().uuidString).store")
+        let disk = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
+                                      configurations: ModelConfiguration(url: url))
+        let context = disk.mainContext
+        context.undoManager = UndoManager()
+        let importer = ReadingImporter(context: context)
+        let me = Profile(name: "Me")
+        context.insert(me)
+        let download = [reading(0, user: 1), reading(1, user: 1), reading(2, user: 2)]
+        _ = try importer.autoLinkUnlinkedUsers(in: download)
+        _ = try importer.importDeviceReadings(download)
+        try importer.delete(try context.fetch(FetchDescriptor<Reading>()).filter { $0.deviceUser == 1 })
+
+        try context.save()
+
+        // Reopen, as on app launch, and let the importer touch the readings
+        // the way the auto-importer does before the profile is deleted.
+        let reopened = try ModelContainer(for: Profile.self, Reading.self, DeviceLink.self, DeletedReading.self,
+                                          configurations: ModelConfiguration(url: url))
+        let fresh = reopened.mainContext
+        fresh.undoManager = UndoManager()
+        _ = try ReadingImporter(context: fresh).importDeviceReadings(download)
+
+        let target = try #require(try fresh.fetch(FetchDescriptor<Profile>()).first { $0.name == name })
+        let freshImporter = ReadingImporter(context: fresh)
+        try freshImporter.deleteProfile(target)
+        #expect(try fresh.fetch(FetchDescriptor<Profile>()).count == 1)
+        #expect(try fresh.fetch(FetchDescriptor<Reading>()).allSatisfy { $0.profile?.name != name })
+
+        // Auto-import must not bring the deleted profile back.
+        #expect(try freshImporter.autoLinkUnlinkedUsers(in: download).isEmpty)
+        #expect(try freshImporter.importDeviceReadings(download).added == 0)
+    }
+
     @Test func csvRowsWithoutProfileUseFallback() throws {
         let me = Profile(name: "Me")
         context.insert(me)
@@ -164,10 +232,12 @@ struct ReadingImporterTests {
                               sourceName: "Manual", deviceID: p.manualDeviceID, deviceUser: nil, profile: p))
         }
         rs.forEach(context.insert)
-        let data = PDFReport.render(profileName: p.name, rangeTitle: "All", readings: rs)
+        rs[0].hidden = true
+        let data = PDFReport.render(profileName: p.name, period: Period(kind: .all), readings: rs,
+                                    options: AnalysisOptions(groupWindowMinutes: 10))
         #expect(data.starts(with: Array("%PDF".utf8)))
         let pages = CGPDFDocument(CGDataProvider(data: data as CFData)!)?.numberOfPages
-        #expect(pages == 3) // 16 + 40 + 4 rows
+        #expect(pages == 3) // summary page, then 40 + 19 visible readings
         // The test host is sandboxed, so the sample goes into its container.
         if ProcessInfo.processInfo.environment["PDF_REPORT_SAMPLE"] != nil {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("sample-report.pdf")

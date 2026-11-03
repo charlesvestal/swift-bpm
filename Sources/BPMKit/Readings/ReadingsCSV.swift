@@ -14,10 +14,12 @@ public struct CSVReading: Equatable, Sendable {
     public var deviceID: String?
     public var deviceUser: Int?
     public var note: String?
+    /// Kept but left out of charts, statistics and reports.
+    public var hidden: Bool
 
     public init(timestamp: Date, profile: String? = nil, systolic: Int, diastolic: Int, pulse: Int? = nil,
                 irregularHeartbeat: Bool = false, bodyMovement: Bool = false, source: String? = nil,
-                deviceID: String? = nil, deviceUser: Int? = nil, note: String? = nil) {
+                deviceID: String? = nil, deviceUser: Int? = nil, note: String? = nil, hidden: Bool = false) {
         self.timestamp = timestamp
         self.profile = profile
         self.systolic = systolic
@@ -29,6 +31,7 @@ public struct CSVReading: Equatable, Sendable {
         self.deviceID = deviceID
         self.deviceUser = deviceUser
         self.note = note
+        self.hidden = hidden
     }
 }
 
@@ -50,7 +53,7 @@ public enum ReadingsCSVError: LocalizedError, Equatable {
 
 public enum ReadingsCSV {
     public static let columns = ["timestamp", "profile", "systolic", "diastolic", "pulse",
-                                 "irregular_heartbeat", "body_movement", "source", "device_id", "device_user", "note"]
+                                 "irregular_heartbeat", "body_movement", "source", "device_id", "device_user", "note", "hidden"]
 
     public static func encode(_ rows: [CSVReading]) -> String {
         let iso = ISO8601DateFormatter()
@@ -69,6 +72,7 @@ public enum ReadingsCSV {
                 r.deviceID ?? "",
                 r.deviceUser.map(String.init) ?? "",
                 r.note ?? "",
+                r.hidden ? "1" : "0",
             ]
             lines.append(fields.map(quote).joined(separator: ","))
         }
@@ -134,7 +138,8 @@ public enum ReadingsCSV {
                 source: field(index("source")),
                 deviceID: field(index("device_id")),
                 deviceUser: try int(index("device_user"), "device_user"),
-                note: field(index("note"))
+                note: field(index("note")),
+                hidden: try bool("hidden")
             ))
         }
         return rows
@@ -146,7 +151,7 @@ public enum ReadingsCSV {
     }
 
     /// RFC 4180 records: quoted fields may contain commas, quotes and newlines.
-    static func parseRecords(_ text: String) throws -> [[String]] {
+    static func parseRecords(_ text: String, delimiter: Unicode.Scalar = ",") throws -> [[String]] {
         var records: [[String]] = []
         var record: [String] = []
         var field = ""
@@ -179,7 +184,7 @@ public enum ReadingsCSV {
             case "\"" where field.isEmpty:
                 inQuotes = true
                 quoteStartLine = line
-            case ",":
+            case delimiter:
                 record.append(field)
                 field = ""
             case "\r":

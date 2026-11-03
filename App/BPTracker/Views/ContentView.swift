@@ -1,3 +1,4 @@
+import AppKit
 import BPMKit
 import SwiftData
 import SwiftUI
@@ -20,6 +21,13 @@ enum EditorRequest: Identifiable {
     }
 }
 
+/// A picked vendor CSV waiting for its column mapping.
+struct ForeignImportRequest: Identifiable {
+    let id = UUID()
+    var fileName: String
+    var text: String
+}
+
 struct AlertMessage: Identifiable {
     let id = UUID()
     var title: String
@@ -32,10 +40,13 @@ struct ContentView: View {
     @Query(sort: \Profile.createdAt) private var profiles: [Profile]
 
     @State private var selection: Profile?
-    @State private var range: TimeRange = .month
+    @State private var period = Period()
     @State private var editor: EditorRequest?
     @State private var deviceImport: DeviceSourceKind?
     @State private var importingCSV = false
+    /// Which kind of CSV the open panel is for.
+    @State private var csvIsForeign = false
+    @State private var foreignImport: ForeignImportRequest?
     @State private var export: ExportFile?
     @State private var alert: AlertMessage?
 
@@ -44,7 +55,7 @@ struct ContentView: View {
             ProfileSidebar(selection: $selection)
         } detail: {
             if let selection {
-                ProfileDetailView(profile: selection, range: $range, editor: $editor)
+                ProfileDetailView(profile: selection, period: $period, editor: $editor)
             } else if profiles.isEmpty {
                 ContentUnavailableView {
                     Label("No profiles yet", systemImage: "person.crop.circle.badge.plus")
@@ -73,8 +84,13 @@ struct ContentView: View {
         .sheet(item: $deviceImport) { kind in
             DeviceImportSheet(kind: kind)
         }
+        .sheet(item: $foreignImport) { request in
+            ForeignImportSheet(fileName: request.fileName, text: request.text, initialProfile: selection) { summary in
+                alert = AlertMessage(title: "Imported \(request.fileName)", message: summary.message)
+            }
+        }
         .fileImporter(isPresented: $importingCSV, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
-            importCSV(result)
+            if csvIsForeign { openForeignCSV(result) } else { importCSV(result) }
         }
         .fileExporter(isPresented: Binding(get: { export != nil }, set: { if !$0 { export = nil } }),
                       document: export, contentType: export?.contentType ?? .commaSeparatedText,
@@ -106,7 +122,15 @@ struct ContentView: View {
                     .keyboardShortcut("i")
                 Button("Bluetooth Monitor") { deviceImport = .bluetooth }
                 Divider()
-                Button("CSV File…") { importingCSV = true }
+                Button("CSV File…") {
+                    csvIsForeign = false
+                    importingCSV = true
+                }
+                Button("From Another App…") {
+                    csvIsForeign = true
+                    importingCSV = true
+                }
+                .help("OMRON, Beurer, Medisana, Microlife, Sanitas, Veroval or any other CSV")
             } label: {
                 Label("Import", systemImage: "square.and.arrow.down")
             }
@@ -114,6 +138,8 @@ struct ContentView: View {
 
             Menu {
                 Button("PDF Report…") { exportPDF() }
+                    .disabled(selection == nil)
+                Button("Share PDF Report…") { sharePDF() }
                     .disabled(selection == nil)
                 Divider()
                 Button("CSV – This Profile…") { exportCSV(allProfiles: false) }
@@ -148,6 +174,17 @@ struct ContentView: View {
         }
     }
 
+    private func openForeignCSV(_ result: Result<URL, Error>) {
+        do {
+            let url = try result.get()
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            foreignImport = ForeignImportRequest(fileName: url.lastPathComponent, text: String(decodingCSV: try Data(contentsOf: url)))
+        } catch {
+            alert = AlertMessage(title: "Import failed", message: error.localizedDescription)
+        }
+    }
+
     private func exportCSV(allProfiles: Bool) {
         let readings: [Reading]
         let name: String
@@ -164,15 +201,37 @@ struct ContentView: View {
                             filename: "Blood Pressure – \(name) – \(Date().formatted(.iso8601.year().month().day())).csv")
     }
 
-    private func exportPDF() {
-        guard let selection else { return }
-        let readings = selection.readings.filter { range.contains($0.timestamp) }
-        guard !readings.isEmpty else {
-            alert = AlertMessage(title: "Nothing to export", message: "\(selection.name) has no readings in the last \(range.rawValue).")
-            return
+    private var reportFilename: String? {
+        selection.map { "Blood Pressure – \($0.name) – \(Date().formatted(.iso8601.year().month().day())).pdf" }
+    }
+
+    /// The report for the selected profile and period, or nil (with an alert) when it would be empty.
+    private func renderReport() -> Data? {
+        guard let selection else { return nil }
+        guard selection.readings.contains(where: { !$0.hidden && period.contains($0.timestamp) }) else {
+            alert = AlertMessage(title: "Nothing to export", message: "\(selection.name) has no readings in \(period.title.lowercased()).")
+            return nil
         }
-        let data = PDFReport.render(profileName: selection.name, rangeTitle: range.rawValue, readings: readings)
-        export = ExportFile(data: data, contentType: .pdf,
-                            filename: "Blood Pressure – \(selection.name) – \(Date().formatted(.iso8601.year().month().day())).pdf")
+        return PDFReport.render(profileName: selection.name, period: period, readings: selection.readings)
+    }
+
+    private func exportPDF() {
+        guard let data = renderReport(), let filename = reportFilename else { return }
+        export = ExportFile(data: data, contentType: .pdf, filename: filename)
+    }
+
+    /// Writes the report to a temporary file and offers the system share menu (Mail, Messages, AirDrop…).
+    private func sharePDF() {
+        guard let data = renderReport(), let filename = reportFilename,
+              let view = NSApp.keyWindow?.contentView else { return }
+        do {
+            let url = FileManager.default.temporaryDirectory.appending(path: filename)
+            try data.write(to: url, options: .atomic)
+            let picker = NSSharingServicePicker(items: [url])
+            let anchor = NSRect(x: view.bounds.maxX - 60, y: view.bounds.maxY - 1, width: 1, height: 1)
+            picker.show(relativeTo: anchor, of: view, preferredEdge: .minY)
+        } catch {
+            alert = AlertMessage(title: "Share failed", message: error.localizedDescription)
+        }
     }
 }

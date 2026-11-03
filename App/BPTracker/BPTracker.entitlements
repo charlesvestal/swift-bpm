@@ -8,7 +8,13 @@
 	<true/>
 	<key>com.apple.security.device.serial</key>
 	<true/>
+	<key>com.apple.security.files.bookmarks.app-scope</key>
+	<true/>
 	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
+	<array>
+		<string>/Library/Mobile Documents/iCloud~is~workflow~my~workflows/Documents/Blood Pressure/</string>
+	</array>
 </dict>
 </plist>
